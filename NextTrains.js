@@ -18,16 +18,23 @@ Module.register("NextTrains", {
       numberoftrains: 4
    },
 
-   parameters: {},
+   context: {
+    id: null,
+   },
 
    start: function() {
+
       this.config.updateInterval = this.config.updateInterval * 1000
       
-      this.getTrains();
+        this.getID();
       setInterval(() => {
          this.getTrains();
       }, this.config.updateInterval);
 
+   },
+
+   getID: function() {
+        this.sendSocketNotification("GET_ID", {});
    },
 
     getDom: function() {
@@ -123,19 +130,32 @@ Module.register("NextTrains", {
     },
 
    socketNotificationReceived: function(notification, payload) {
-        if (notification === "ACTIVITY") {
+        if(notification === "NEW_ID")
+        {
+            this.context.id = payload.id;
+            this.getTrains();
+        }
+        else if (notification === "ACTIVITY") {
 
-            this.config.trains = payload;
-
-            this.updateDom(1000);
+            console.log(payload);
+            if(payload.id == this.context.id)
+            {
+                this.config.trains = payload.trains;
+                this.updateDom(1000);
+            }
         }
     },
 
     getTrains: function() {
+        if(this.context.id == null)
+        {
+            Log.info(this.name + ": Waiting for ID");
+            return;
+        }
         Log.info(this.name + ": Getting trains");
 
         this.sendSocketNotification("GET_TRAINS", {
-            config: this.config
+            context: this.context
         });
     },
 

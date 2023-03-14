@@ -13,6 +13,7 @@ let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_REA
 
 module.exports = NodeHelper.create({
 
+	nextID: 0,
 	station: "",
 	
 	start: function() {
@@ -41,19 +42,22 @@ module.exports = NodeHelper.create({
 	
 	socketNotificationReceived: function(notification, payload) {
 
-		var self = this;
 		console.log("Notification: " + notification + " Payload: " + JSON.stringify(payload));
 
-		if(notification === "GET_TRAINS") {
+		if (notification === "GET_ID") 
+			this.sendSocketNotification("NEW_ID", {"id": this.nextID++} );
+		else if(notification === "GET_TRAINS") {
 			
+			let context = payload.context;
 			let day = this.getDay();
-			// self.sendSocketNotification("ACTIVITY", this.trains);
-			this.getTrains(this.station, undefined, undefined, day);
+			// this.sendSocketNotification("ACTIVITY", this.trains);
+			this.getTrains(context, this.station, undefined, undefined, day);
 		}
+
 	},
 
 
-	getTrains(targetStation, time, maxTrains=10, day="monday")
+	getTrains(context, targetStation, time, maxTrains=10, day="monday")
 	{
 		db.serialize(() => {
 			
@@ -99,7 +103,7 @@ module.exports = NodeHelper.create({
 				 console.error(err.message);
 			  }
 				console.log(trains);
-				this.sendSocketNotification("ACTIVITY", trains);
+				this.sendSocketNotification("ACTIVITY", {"id": context.id, "trains": trains}  );
 			});
 
 		 });
