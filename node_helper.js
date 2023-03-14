@@ -11,7 +11,6 @@ let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_REA
 
 module.exports = NodeHelper.create({
 
-	nextID: 0,
 	maxTrains: 10,
 	
 	start: function() {
