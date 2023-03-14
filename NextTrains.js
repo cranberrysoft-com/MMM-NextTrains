@@ -18,12 +18,14 @@ Module.register("NextTrains", {
       numberoftrains: 4
    },
 
+   parameters: {},
+
    start: function() {
       this.config.updateInterval = this.config.updateInterval * 1000
       
-      this.getActivity();
+      this.getTrains();
       setInterval(() => {
-         this.getActivity();
+         this.getTrains();
       }, this.config.updateInterval);
 
    },
@@ -62,11 +64,10 @@ Module.register("NextTrains", {
     getMinutesDiff: function(d1, d2)
     {
         var diffMs = (d1 - d2); // milliseconds between now & Christmas
-        var diffDays = Math.floor(diffMs / 86400000); // days
-        var diffHrs = Math.floor((diffMs % 86400000) / 3600000); // hours
+        // var diffDays = Math.floor(diffMs / 86400000); // days
+        // var diffHrs = Math.floor((diffMs % 86400000) / 3600000); // hours
         var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes
 
-        // return Math.abs(diffMins);
         return diffMins;
     }, 
 
@@ -130,8 +131,8 @@ Module.register("NextTrains", {
         }
     },
 
-    getActivity: function() {
-        Log.info("BORED: Getting activity.");
+    getTrains: function() {
+        Log.info(this.name + ": Getting trains");
 
         this.sendSocketNotification("GET_TRAINS", {
             config: this.config

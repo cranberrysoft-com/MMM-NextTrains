@@ -13,7 +13,6 @@ let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_REA
 
 module.exports = NodeHelper.create({
 
-	trains: [],
 	station: "",
 	
 	start: function() {
@@ -48,7 +47,7 @@ module.exports = NodeHelper.create({
 		if(notification === "GET_TRAINS") {
 			
 			let day = this.getDay();
-			self.sendSocketNotification("ACTIVITY", this.trains);
+			// self.sendSocketNotification("ACTIVITY", this.trains);
 			this.getTrains(this.station, undefined, undefined, day);
 		}
 	},
@@ -56,10 +55,9 @@ module.exports = NodeHelper.create({
 
 	getTrains(targetStation, time, maxTrains=10, day="monday")
 	{
-		this.trains = [];
 		db.serialize(() => {
 			
-			db.each(`select 
+			db.all(`select 
 							* 
 						from 
 							calendar c 
@@ -96,14 +94,14 @@ module.exports = NodeHelper.create({
 							AND strftime('%Y%m%d', 'now') < c.end_date 
 						ORDER by 
 							t.departure_time 
-						LIMIT ${maxTrains}`, (err, row) => {
+						LIMIT ${maxTrains}`, (err, trains) => {
 			  if (err) {
 				 console.error(err.message);
 			  }
-
-			console.log(row);
-			this.trains.push(row);
+				console.log(trains);
+				this.sendSocketNotification("ACTIVITY", trains);
 			});
+
 		 });
 	}
 });
