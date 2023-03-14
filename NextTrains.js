@@ -20,7 +20,8 @@ Module.register("NextTrains", {
     context: {
         id: null,
         station: "",
-        maxTrains: 0
+        maxTrains: 0,
+        departedAfter: "" //HH:MM:SS
     },
 
     start: function() {
@@ -71,8 +72,11 @@ Module.register("NextTrains", {
 
     getDateTime: function(time)
     {
-        let yourDate = new Date()
-        return new Date(yourDate.toISOString().split('T')[0] + "T" + time)
+        let d = new Date()
+        var datestring = d.getFullYear()  + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
+
+        return new Date(datestring + "T" + time)
+        
     },
 
     getMinutesDiff: function(d1, d2)
@@ -151,6 +155,9 @@ Module.register("NextTrains", {
 
     getTrains: function() {
         Log.info(this.name + ": Getting trains");
+
+        let now = new Date(); 
+        this.context.departedAfter = now.toLocaleTimeString(); //Retrieve trains from after now
 
         this.sendSocketNotification("GET_TRAINS", {
             context: this.context

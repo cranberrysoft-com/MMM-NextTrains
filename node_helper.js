@@ -67,10 +67,7 @@ module.exports = NodeHelper.create({
 											p.stop_name = "${context.station}"
 									) target_stops on st.stop_id = target_stops.stop_id 
 									where 
-									st.departure_time >= (
-										SELECT 
-											TIME('now', 'localtime')
-									)
+									st.departure_time >= "${context.departedAfter}"
 								) st on t.trip_id = st.trip_id
 							) t on c.service_id = t.service_id 
 						where 
