@@ -14,22 +14,25 @@ Module.register("NextTrains", {
       type: "Welcome to NextTrains!",
       xtext: "Keeping you on top of your trains",
       trains: [],
-      targetStation: "",
+      station: "",
       numberoftrains: 4
    },
 
    context: {
     id: null,
+    station: ""
    },
 
    start: function() {
 
-      this.config.updateInterval = this.config.updateInterval * 1000
+    this.config.updateInterval = this.config.updateInterval * 1000
       
-        this.getID();
-      setInterval(() => {
-         this.getTrains();
-      }, this.config.updateInterval);
+    this.getID();
+    this.context.station = this.config.station;
+
+    setInterval(() => {
+        this.getTrains();
+    }, this.config.updateInterval);
 
    },
 
@@ -79,7 +82,7 @@ Module.register("NextTrains", {
     }, 
 
     getHeader: function() {
-        return "NextTrains: " + this.config.targetStation;
+        return "NextTrains: " + this.config.station;
     },
 
     createTableHeader: function() {

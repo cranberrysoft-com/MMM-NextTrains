@@ -1,8 +1,6 @@
 // var request = require('request');
 var NodeHelper = require("node_helper");
 const sqlite3 = require('sqlite3').verbose();
-const fs = require('fs');
-
 
 let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_READWRITE, (err) => {
     if (err)
@@ -14,22 +12,9 @@ let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_REA
 module.exports = NodeHelper.create({
 
 	nextID: 0,
-	station: "",
 	
 	start: function() {
 		console.log("Starting node helper: " + this.name);
-
-		fs.readFile('./modules/NextTrains/serverconf', 'utf8', (err, targetStation) => {
-			if (err) {
-			  console.error(err);
-			  return;
-			}
-
-			let day = this.getDay();
-			this.station = targetStation;
-			this.getTrains(this.station, undefined, undefined, day);
-		 });
-
 	},
 
 	getDay: function() {
@@ -51,13 +36,13 @@ module.exports = NodeHelper.create({
 			let context = payload.context;
 			let day = this.getDay();
 			// this.sendSocketNotification("ACTIVITY", this.trains);
-			this.getTrains(context, this.station, undefined, undefined, day);
+			this.getTrains(context, undefined, undefined, day);
 		}
 
 	},
 
 
-	getTrains(context, targetStation, time, maxTrains=10, day="monday")
+	getTrains(context, time, maxTrains=10, day="monday")
 	{
 		db.serialize(() => {
 			
@@ -84,7 +69,7 @@ module.exports = NodeHelper.create({
 											stops p 
 											join stops c on p.stop_id = c.parent_station 
 										where 
-											p.stop_name = "${targetStation}"
+											p.stop_name = "${context.station}"
 									) target_stops on st.stop_id = target_stops.stop_id 
 									where 
 									st.departure_time >= (
