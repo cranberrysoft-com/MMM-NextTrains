@@ -6,44 +6,48 @@
  */
 
 Module.register("NextTrains", {
-   // Default module config.
+    
 
-   defaults: {
-      boredURL: "https://www.boredapi.com/api/activity",
-      updateInterval : 10, //Seconds before changeing
-      type: "Welcome to NextTrains!",
-      xtext: "Keeping you on top of your trains",
-      trains: [],
-      station: "",
-      numberoftrains: 4
-   },
+    trains: [],
+    // Default module config.
+    defaults: {
+        updateInterval : 10, //Seconds before changeing
+        type: "Welcome to NextTrains!",
+        xtext: "Keeping you on top of your trains",
+        station: "",
+        maxTrains: 4
+    },
 
-   context: {
-    id: null,
-    station: ""
-   },
+    context: {
+        id: null,
+        station: "",
+        maxTrains: 0
+    },
 
-   start: function() {
+    start: function() {
 
-    this.config.updateInterval = this.config.updateInterval * 1000
-      
-    this.getID();
-    this.context.station = this.config.station;
+        this.config.updateInterval = this.config.updateInterval * 1000
+        
+        this.getID();
+        this.context.station = this.config.station;
+        this.context.maxTrains = this.config.maxTrains;
 
-    setInterval(() => {
-        this.getTrains();
-    }, this.config.updateInterval);
+        setInterval(() => {
+            this.getTrains();
+        }, this.config.updateInterval);
 
-   },
+    },
 
-   getID: function() {
+    getID: function() {
         this.sendSocketNotification("GET_ID", {});
-   },
+    },
 
     getDom: function() {
 
-        if(this.config.trains.length == 0) {
-            return document.createElement("div").innerHTML = "Loading Times"
+        if(this.trains.length == 0) {
+            let x = document.createElement("div");
+            x.innerHTML = "Loading...";
+            return x
         }
 
         const wrapper = document.createElement("table");
@@ -52,7 +56,7 @@ Module.register("NextTrains", {
 
         let row = null
         // console.log(this.config.time_format)
-        this.config.trains.forEach(t => {
+        this.trains.forEach(t => {
 
                 let minsUntilTrain = this.getMinutesDiff(this.getDateTime(t.departure_time), new Date());
                 row = this.createTableRow( t["stop_name:1"], minsUntilTrain+"m" + " - " + t.departure_time, t.trip_headsign)
@@ -143,7 +147,7 @@ Module.register("NextTrains", {
             console.log(payload);
             if(payload.id == this.context.id)
             {
-                this.config.trains = payload.trains;
+                this.trains = payload.trains;
                 this.updateDom(1000);
             }
         }

@@ -12,6 +12,7 @@ let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_REA
 module.exports = NodeHelper.create({
 
 	nextID: 0,
+	maxTrains: 10,
 	
 	start: function() {
 		console.log("Starting node helper: " + this.name);
@@ -35,15 +36,15 @@ module.exports = NodeHelper.create({
 			
 			let context = payload.context;
 			let day = this.getDay();
-			// this.sendSocketNotification("ACTIVITY", this.trains);
-			this.getTrains(context, undefined, undefined, day);
+			this.getTrains(context, undefined, day);
 		}
 
 	},
 
 
-	getTrains(context, time, maxTrains=10, day="monday")
+	getTrains(context, time, day="monday")
 	{
+		context.maxTrains = Math.min(context.maxTrains, this.maxTrains);
 		db.serialize(() => {
 			
 			db.all(`select 
@@ -83,7 +84,7 @@ module.exports = NodeHelper.create({
 							AND strftime('%Y%m%d', 'now') < c.end_date 
 						ORDER by 
 							t.departure_time 
-						LIMIT ${maxTrains}`, (err, trains) => {
+						LIMIT ${context.maxTrains}`, (err, trains) => {
 			  if (err) {
 				 console.error(err.message);
 			  }
