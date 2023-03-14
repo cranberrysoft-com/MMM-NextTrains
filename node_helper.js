@@ -11,42 +11,37 @@ let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_REA
     	console.log('Connected to the NextTrain database.');
   });
 
-
-
 module.exports = NodeHelper.create({
 
 	trains: [],
-	targetStation: "",
 	
 	start: function() {
 		console.log("Starting node helper: " + this.name);
 
-
-		fs.readFile('./modules/NextTrains/serverconf', 'utf8', (err, data) => {
+		fs.readFile('./modules/NextTrains/serverconf', 'utf8', (err, targetStation) => {
 			if (err) {
 			  console.error(err);
 			  return;
 			}
-			this.targetStation = data;
 
-			var date = new Date();
-			let s = date.toLocaleString('en-US', {
-					weekday: 'long'
-				 });
-			s = s.toLowerCase()
-
-
-			this.getTrains(undefined, undefined, undefined, s);
+			let day = this.getDay();
+			this.getTrains(targetStation, undefined, undefined, day);
 		 });
 
+	},
+
+	getDay: function() {
+		var date = new Date();
+		let s = date.toLocaleString('en-US', {
+				weekday: 'long'
+			 });
+		return s.toLowerCase();
 	},
 	
 	socketNotificationReceived: function(notification, payload) {
 
 		var self = this;
 		console.log("Notification: " + notification + " Payload: " + JSON.stringify(payload));
-		// self.sendSocketNotification("ACTIVITY", this.trains[0].stop_name);
-		// self.sendSocketNotification("ACTIVITY", "xxxxxxxx");
 
 		if(notification === "GET_TRAINS") {
 			self.sendSocketNotification("ACTIVITY", this.trains);
@@ -82,7 +77,7 @@ module.exports = NodeHelper.create({
 											stops p 
 											join stops c on p.stop_id = c.parent_station 
 										where 
-											p.stop_name = "${this.targetStation}"
+											p.stop_name = "${targetStation}"
 									) target_stops on st.stop_id = target_stops.stop_id 
 									where 
 									st.departure_time >= (
