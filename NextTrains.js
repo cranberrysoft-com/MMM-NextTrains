@@ -41,7 +41,9 @@ Module.register("NextTrains", {
         let row = null
         // console.log(this.config.time_format)
         this.config.trains.forEach(t => {
-                row = this.createTableRow( t["stop_name:1"], t.departure_time, t.trip_headsign)
+
+                let minsUntilTrain = this.getMinutesDiff(this.getDateTime(t.departure_time), new Date());
+                row = this.createTableRow( t["stop_name:1"], minsUntilTrain+"m" + " - " + t.departure_time, t.trip_headsign)
                 wrapper.appendChild(row)
         });
 
@@ -49,6 +51,24 @@ Module.register("NextTrains", {
 
         return wrapper;
     },
+
+    getDateTime: function(time)
+    {
+        let yourDate = new Date()
+        return new Date(yourDate.toISOString().split('T')[0] + "T" + time)
+
+    },
+
+    getMinutesDiff: function(d1, d2)
+    {
+        var diffMs = (d1 - d2); // milliseconds between now & Christmas
+        var diffDays = Math.floor(diffMs / 86400000); // days
+        var diffHrs = Math.floor((diffMs % 86400000) / 3600000); // hours
+        var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes
+
+        // return Math.abs(diffMins);
+        return diffMins;
+    }, 
 
     getHeader: function() {
         return "NextTrains: " + this.config.targetStation;

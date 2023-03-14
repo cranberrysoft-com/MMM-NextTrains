@@ -14,6 +14,7 @@ let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_REA
 module.exports = NodeHelper.create({
 
 	trains: [],
+	station: "",
 	
 	start: function() {
 		console.log("Starting node helper: " + this.name);
@@ -25,7 +26,8 @@ module.exports = NodeHelper.create({
 			}
 
 			let day = this.getDay();
-			this.getTrains(targetStation, undefined, undefined, day);
+			this.station = targetStation;
+			this.getTrains(this.station, undefined, undefined, day);
 		 });
 
 	},
@@ -44,14 +46,17 @@ module.exports = NodeHelper.create({
 		console.log("Notification: " + notification + " Payload: " + JSON.stringify(payload));
 
 		if(notification === "GET_TRAINS") {
+			
+			let day = this.getDay();
 			self.sendSocketNotification("ACTIVITY", this.trains);
+			this.getTrains(this.station, undefined, undefined, day);
 		}
 	},
 
 
 	getTrains(targetStation, time, maxTrains=10, day="monday")
 	{
-		this.train = [];
+		this.trains = [];
 		db.serialize(() => {
 			
 			db.each(`select 
