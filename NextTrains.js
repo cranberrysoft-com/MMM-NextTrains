@@ -28,22 +28,78 @@ Module.register("NextTrains", {
 
    },
 
+    getDom: function() {
 
-    getDom: function() {    
-        var wrapper = document.createElement("div");
-        let trains = this.config.trains;
-
-        console.log(trains);
-
-        for(let i = 0; i < trains.length; i++)
-        {
-            var nextTrain = document.createElement("div");
-            nextTrain.innerHTML = trains[i].departure_time + " " + trains[i]["stop_name:1"];
-            wrapper.appendChild(nextTrain);
+        if(this.config.trains.length == 0) {
+            return document.createElement("div").innerHTML = "Loading Times"
         }
 
-      return wrapper;
-   },
+        const wrapper = document.createElement("table");
+        const header_row = this.createTableHeader()
+        wrapper.appendChild(header_row)
+
+        let row = null
+        // console.log(this.config.time_format)
+        this.config.trains.forEach(t => {
+                row = this.createTableRow( t["stop_name:1"], t.departure_time, t.trip_headsign)
+                wrapper.appendChild(row)
+        });
+
+
+
+        return wrapper;
+    },
+
+    getHeader: function() {
+        return "NextTrains: " + this.config.targetStation;
+    },
+
+    createTableHeader: function() {
+        let header_row = document.createElement('tr')
+        header_row.className = "align-left regular xsmall dimmed"
+        
+        let header_destination = document.createElement('td')
+        let route_time = document.createElement('td')
+        let header_time = document.createElement('td')
+
+        
+        header_destination.innerText = "Platform"
+        route_time.innerText = "Route"
+        header_time.innerText = "Departs"
+        
+        header_row.appendChild(header_destination)
+        header_row.appendChild(route_time)
+        header_row.appendChild(header_time)
+        return header_row
+    },
+
+    createTableRow: function(destination_name, local_time, route_name) {
+        let row = document.createElement('tr')
+        row.className = "align-left small normal"
+        
+        let destination = document.createElement('td')
+        let route = document.createElement('td')
+        let time = document.createElement('td')
+
+        destination.innerText = destination_name.split(' ').pop()
+        route.innerText = route_name;
+        time.innerText = local_time
+        
+        // if(this.config.etd) {
+
+        //     let etd = local_time
+        //     time.innerText = etd + " mins"
+        //     if(etd == 0) {
+        //         time.innerText = "now"
+        //     }
+        // }
+        
+        row.appendChild(destination)
+        row.appendChild(route)
+        row.appendChild(time)
+        return row
+
+    },
 
    socketNotificationReceived: function(notification, payload) {
         if (notification === "ACTIVITY") {
