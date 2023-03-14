@@ -30,13 +30,13 @@ module.exports = NodeHelper.create({
 		console.log("Notification: " + notification + " Payload: " + JSON.stringify(payload));
 		
 		if(notification === "GET_TRAINS") {
-			this.getTrains(payload.context, undefined, this.getDay());
+			this.getTrains(payload.context, this.getDay());
 		}
 
 	},
 
 
-	getTrains(context, time, day="monday")
+	getTrains(context, day="monday")
 	{
 		context.maxTrains = Math.min(context.maxTrains, this.maxTrains);
 		db.serialize(() => {
