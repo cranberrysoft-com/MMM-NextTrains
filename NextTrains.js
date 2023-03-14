@@ -26,7 +26,6 @@ Module.register("NextTrains", {
     start: function() {
 
         this.config.updateInterval = this.config.updateInterval * 1000
-        
         this.context.id = this.identifier;
         this.context.station = this.config.station;
         this.context.maxTrains = this.config.maxTrains;
@@ -74,7 +73,6 @@ Module.register("NextTrains", {
     {
         let yourDate = new Date()
         return new Date(yourDate.toISOString().split('T')[0] + "T" + time)
-
     },
 
     getMinutesDiff: function(d1, d2)
