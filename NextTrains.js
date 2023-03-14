@@ -7,13 +7,12 @@
 
 Module.register("NextTrains", {
     
-
     trains: [],
+    welcomeMessage: "Welcome to NextTrains!",
+    welcomed: false,
     // Default module config.
     defaults: {
         updateInterval : 10, //Seconds before changeing
-        type: "Welcome to NextTrains!",
-        xtext: "Keeping you on top of your trains",
         station: "",
         maxTrains: 4
     },
@@ -39,14 +38,23 @@ Module.register("NextTrains", {
 
     },
 
+    initialMessage: function() {
+        let x = document.createElement("div");
+        if(!this.welcomed)
+        {
+            x.innerHTML = this.welcomeMessage;
+            this.welcomed = true;
+        }
+        else
+            x.innerHTML = "Loading...";
+        return x
+    },
+
 
     getDom: function() {
 
-        if(this.trains.length == 0) {
-            let x = document.createElement("div");
-            x.innerHTML = "Loading...";
-            return x
-        }
+        if(this.trains.length == 0)
+            return this.initialMessage()
 
         const wrapper = document.createElement("table");
         const header_row = this.createTableHeader()
@@ -80,7 +88,7 @@ Module.register("NextTrains", {
     }, 
 
     getHeader: function() {
-        return "NextTrains: " + this.config.station;
+        return this.name + ": " + this.config.station;
     },
 
     createTableHeader: function() {
@@ -135,7 +143,7 @@ Module.register("NextTrains", {
     if (notification === "ACTIVITY") {
 
         console.log(payload);
-        if(payload.id === this.context.id)
+        if(payload.id == this.context.id)
         {
             this.trains = payload.trains;
             this.updateDom(1000);
