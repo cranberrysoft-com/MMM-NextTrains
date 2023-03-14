@@ -29,10 +29,8 @@ module.exports = NodeHelper.create({
 	socketNotificationReceived: function(notification, payload) {
 
 		console.log("Notification: " + notification + " Payload: " + JSON.stringify(payload));
-
-		if (notification === "GET_ID") 
-			this.sendSocketNotification("NEW_ID", {"id": this.nextID++} );
-		else if(notification === "GET_TRAINS") {
+		
+		if(notification === "GET_TRAINS") {
 			
 			let context = payload.context;
 			let day = this.getDay();

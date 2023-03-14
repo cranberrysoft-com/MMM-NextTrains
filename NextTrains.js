@@ -28,19 +28,17 @@ Module.register("NextTrains", {
 
         this.config.updateInterval = this.config.updateInterval * 1000
         
-        this.getID();
+        this.context.id = this.identifier;
         this.context.station = this.config.station;
         this.context.maxTrains = this.config.maxTrains;
 
+        this.getTrains();
         setInterval(() => {
             this.getTrains();
         }, this.config.updateInterval);
 
     },
 
-    getID: function() {
-        this.sendSocketNotification("GET_ID", {});
-    },
 
     getDom: function() {
 
@@ -55,15 +53,11 @@ Module.register("NextTrains", {
         wrapper.appendChild(header_row)
 
         let row = null
-        // console.log(this.config.time_format)
         this.trains.forEach(t => {
-
-                let minsUntilTrain = this.getMinutesDiff(this.getDateTime(t.departure_time), new Date());
-                row = this.createTableRow( t["stop_name:1"], minsUntilTrain+"m" + " - " + t.departure_time, t.trip_headsign)
-                wrapper.appendChild(row)
+            let minsUntilTrain = this.getMinutesDiff(this.getDateTime(t.departure_time), new Date());
+            row = this.createTableRow( t["stop_name:1"], minsUntilTrain+"m" + " - " + t.departure_time, t.trip_headsign)
+            wrapper.appendChild(row)
         });
-
-
 
         return wrapper;
     },
@@ -137,28 +131,19 @@ Module.register("NextTrains", {
     },
 
    socketNotificationReceived: function(notification, payload) {
-        if(notification === "NEW_ID")
-        {
-            this.context.id = payload.id;
-            this.getTrains();
-        }
-        else if (notification === "ACTIVITY") {
+        
+    if (notification === "ACTIVITY") {
 
-            console.log(payload);
-            if(payload.id == this.context.id)
-            {
-                this.trains = payload.trains;
-                this.updateDom(1000);
-            }
+        console.log(payload);
+        if(payload.id === this.context.id)
+        {
+            this.trains = payload.trains;
+            this.updateDom(1000);
         }
+    }
     },
 
     getTrains: function() {
-        if(this.context.id == null)
-        {
-            Log.info(this.name + ": Waiting for ID");
-            return;
-        }
         Log.info(this.name + ": Getting trains");
 
         this.sendSocketNotification("GET_TRAINS", {
