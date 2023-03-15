@@ -23,7 +23,13 @@ module.exports = NodeHelper.create({
 		console.log("Starting node helper: " + this.name);
 		this.apikey = this.getApiKey();
 		this.isStaticGTFSUpdateAvailable()
-		console.log("_______IS UPDATE AVAILABLE: " + updateAvaiable);
+
+
+
+		// setInterval(() => {
+		// 	console.log("_______IS UPDATE AVAILABLE: " + this.updateAvailable);
+		// }, 10000);
+
 	},
 
 	getApiKey: function()
@@ -113,7 +119,7 @@ module.exports = NodeHelper.create({
 	{		
 		if(!this.checkForUpdates) // Always return unavailable if the we do not want the database to update
 		{
-			this.updateAvaiable = false;
+			this.updateAvailable = false;
 			return;
 		}
 
