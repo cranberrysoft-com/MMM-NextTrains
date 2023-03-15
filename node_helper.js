@@ -58,7 +58,7 @@ module.exports = NodeHelper.create({
 		console.log("Notification: " + notification + " Payload: " + JSON.stringify(payload));
 		
 		if(notification === "GET_TRAINS") {
-			// this.getTrains(payload.context, this.getDay());
+			this.getTrains(payload.context, this.getDay());
 		}
 
 	},
