@@ -3,6 +3,7 @@ var NodeHelper = require("node_helper");
 const sqlite3 = require('sqlite3').verbose();
 var https = require('https');
 const fs = require('fs');
+var protobuf = require("protobufjs");
 
 let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_READWRITE, (err) => {
     if (err)
@@ -13,23 +14,59 @@ let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_REA
 
 module.exports = NodeHelper.create({
 
+	config: {
+		checkForGTFSUpdates: true,
+		checkForRealTimeUpdates: true
+	},
+
 	maxTrains: 10,
 	apikey: "",
 	lastModified: null,
-	checkForUpdates: true,
-	updateAvailable: false,
+	staticGTFSupdateAvailable: false,
+	messages: null,
+	buffer: [],
+	GTFSRealTimeMessage: null,
+
+
+	checkForUpdates: function()
+	{
+		if(this.config.checkForGTFSUpdates)
+			this.isStaticGTFSUpdateAvailable();
+
+		if(this.config.checkForRealTimeUpdates)
+			this.isRealTimeUpdateAvailable();
+
+	},
+
+	isRealTimeUpdateAvailable: function() {
+
+		
+	},
 	
 	start: function() {
 		console.log("Starting node helper: " + this.name);
 		this.apikey = this.getApiKey();
-		this.isStaticGTFSUpdateAvailable()
 
+		
+		let root = protobuf.loadSync("./modules/NextTrains/gtfs-realtime.proto");
+		this.GTFSRealTimeMessage = root.lookupType("transit_realtime.FeedMessage");
+
+
+		this.isStaticGTFSUpdateAvailable();
+		this.getRealTimeUpdates();
 
 
 		// setInterval(() => {
-		// 	console.log("_______IS UPDATE AVAILABLE: " + this.updateAvailable);
-		// }, 10000);
+		// 	checkForUpdates();
+		// }, 5000);
+		
 
+		setTimeout(() => {
+			console.log(this.GTFSRealTimeMessage.decode(this.buffer));
+			// console.log(Object.keys(message).toString());
+			// console.log(message.entity[0]);
+
+		}, 5000);
 	},
 
 	getApiKey: function()
@@ -57,10 +94,9 @@ module.exports = NodeHelper.create({
 
 		console.log("Notification: " + notification + " Payload: " + JSON.stringify(payload));
 		
-		if(notification === "GET_TRAINS") {
+		if(notification === "GET_TRAINS") 
 			this.getTrains(payload.context, this.getDay());
-		}
-
+		
 	},
 
 
@@ -117,13 +153,8 @@ module.exports = NodeHelper.create({
 
 	isStaticGTFSUpdateAvailable: function()
 	{		
-		if(!this.checkForUpdates) // Always return unavailable if the we do not want the database to update
-		{
-			this.updateAvailable = false;
-			return;
-		}
-
 		const httpsoptions = {
+			protocol: "https:",
 			hostname: "api.transport.nsw.gov.au",
 			path: "/v1/publictransport/timetables/complete/gtfs",
 			method: 'HEAD',
@@ -133,17 +164,43 @@ module.exports = NodeHelper.create({
 		const req = https.request(httpsoptions, res => {
 			if (res.statusCode == 200)
 			{
-				console.log("+++++++++++++" + res.headers["last-modified"]);
+				console.log(res.headers["last-modified"]);
 				GTFSLastModified = new Date(res.headers["last-modified"]);
 
 				if(!this.lastModified || GTFSLastModified > this.lastModified)  // If last modified is unpopulated, update is available
-				{
+				{																					 // OR previous modification is before whats available
 					this.lastModified = GTFSLastModified;
-					this.updateAvailable = true;
+					this.staticGTFSupdateAvailable = true;
 				}
 			}
 			else
-				this.updateAvailable = false;
+				this.staticGTFSupdateAvailable = false;
+		 });
+	 	req.end();
+	},
+
+	getRealTimeUpdates: function()
+	{		
+		const httpsoptions = {
+			protocol: "https:",
+			hostname: "api.transport.nsw.gov.au",
+			path: "/v2/gtfs/realtime/sydneytrains",
+			method: 'GET',
+			headers: {"Authorization": "apikey " + this.apikey}
+		}
+
+		const req = https.request(httpsoptions, res => {
+			if (res.statusCode == 200)
+			{
+				// console.log(res.headers);
+				res.on('data', (d) => {
+					// console.log(Object.prototype.toString.call(d)); //prints type
+					d.forEach(i => {
+						this.buffer.push(i);
+					});
+				 });
+			}
+
 		 });
 	 	req.end();
 	}
