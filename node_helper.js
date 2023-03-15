@@ -21,8 +21,10 @@ module.exports = NodeHelper.create({
 
 	maxTrains: 10,
 	apikey: "",
-	lastModified: null,
-	staticGTFSupdateAvailable: false,
+	GTFSLastModified: null,
+	realTimeLastModified: null,
+	staticGTFSUpdateAvailable: false,
+	realTimeUpdateAvailable: false,
 	messages: null,
 	buffer: [],
 	GTFSRealTimeMessage: null,
@@ -39,6 +41,30 @@ module.exports = NodeHelper.create({
 	},
 
 	isRealTimeUpdateAvailable: function() {
+		const httpsoptions = {
+			protocol: "https:",
+			hostname: "api.transport.nsw.gov.au",
+			path: "/v2/gtfs/realtime/sydneytrains",
+			method: 'HEAD',
+			headers: {"Authorization": "apikey " + this.apikey}
+		}
+
+		const req = https.request(httpsoptions, res => {
+			if (res.statusCode == 200)
+			{
+				console.log(res.headers["last-modified"]);
+				realTimeLastModified = new Date(res.headers["last-modified"]);
+
+				if(!this.realTimeLastModified || realTimeLastModified > this.realTimeLastModified)  // If last modified is unpopulated, update is available
+				{																					 // OR previous modification is before whats available
+					this.realTimeLastModified = realTimeLastModified;
+					this.realTimeUpdateAvailable = true;
+				}
+			}
+			else
+				this.realTimeUpdateAvailable = false;
+		 });
+	 	req.end();
 
 		
 	},
@@ -167,14 +193,14 @@ module.exports = NodeHelper.create({
 				console.log(res.headers["last-modified"]);
 				GTFSLastModified = new Date(res.headers["last-modified"]);
 
-				if(!this.lastModified || GTFSLastModified > this.lastModified)  // If last modified is unpopulated, update is available
+				if(!this.GTFSLastModified || GTFSLastModified > this.GTFSLastModified)  // If last modified is unpopulated, update is available
 				{																					 // OR previous modification is before whats available
-					this.lastModified = GTFSLastModified;
-					this.staticGTFSupdateAvailable = true;
+					this.GTFSLastModified = GTFSLastModified;
+					this.staticGTFSUpdateAvailable = true;
 				}
 			}
 			else
-				this.staticGTFSupdateAvailable = false;
+				this.staticGTFSUpdateAvailable = false;
 		 });
 	 	req.end();
 	},
