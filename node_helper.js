@@ -13,86 +13,63 @@ let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_REA
   });
 
 module.exports = NodeHelper.create({
-
 	config: {
 		checkForGTFSUpdates: true,
 		checkForRealTimeUpdates: true
+		//config to set GTFS static interval
+		//config to real time interval
 	},
 
 	maxTrains: 10,
 	apikey: "",
 	GTFSLastModified: null,
 	realTimeLastModified: null,
-	staticGTFSUpdateAvailable: false,
-	realTimeUpdateAvailable: false,
+
 	messages: null,
 	buffer: [],
 	GTFSRealTimeMessage: null,
 
+	realTimeData: {},
 
-	checkForUpdates: function()
-	{
-		if(this.config.checkForGTFSUpdates)
-			this.isStaticGTFSUpdateAvailable();
-
-		if(this.config.checkForRealTimeUpdates)
-			this.isRealTimeUpdateAvailable();
-
-	},
-
-	isRealTimeUpdateAvailable: function() {
-		const httpsoptions = {
-			protocol: "https:",
-			hostname: "api.transport.nsw.gov.au",
-			path: "/v2/gtfs/realtime/sydneytrains",
-			method: 'HEAD',
-			headers: {"Authorization": "apikey " + this.apikey}
-		}
-
-		const req = https.request(httpsoptions, res => {
-			if (res.statusCode == 200)
-			{
-				console.log(res.headers["last-modified"]);
-				realTimeLastModified = new Date(res.headers["last-modified"]);
-
-				if(!this.realTimeLastModified || realTimeLastModified > this.realTimeLastModified)  // If last modified is unpopulated, update is available
-				{																					 // OR previous modification is before whats available
-					this.realTimeLastModified = realTimeLastModified;
-					this.realTimeUpdateAvailable = true;
-				}
-			}
-			else
-				this.realTimeUpdateAvailable = false;
-		 });
-	 	req.end();
-
-		
-	},
 	
 	start: function() {
 		console.log("Starting node helper: " + this.name);
 		this.apikey = this.getApiKey();
-
 		
+		//Protobuffer setup for realtime updates
 		let root = protobuf.loadSync("./modules/NextTrains/gtfs-realtime.proto");
 		this.GTFSRealTimeMessage = root.lookupType("transit_realtime.FeedMessage");
 
-
-		this.isStaticGTFSUpdateAvailable();
-		this.getRealTimeUpdates();
-
-
-		// setInterval(() => {
-		// 	checkForUpdates();
-		// }, 5000);
-		
-
-		setTimeout(() => {
-			console.log(this.GTFSRealTimeMessage.decode(this.buffer));
-			// console.log(Object.keys(message).toString());
-			// console.log(message.entity[0]);
-
+		setInterval(() => {
+			this.checkForUpdates();
 		}, 5000);
+	},
+
+	updateGTFSData: function () {
+		console.log("(STUB) Updating static GTFS database...");
+	},
+
+	checkForUpdates: function()
+	{
+		if(this.config.checkForGTFSUpdates)
+		{
+			this.isStaticGTFSUpdateAvailable().then(updateAvailable => {
+				if(updateAvailable)
+					updateGTFSData();
+			});
+		}
+
+		if(this.config.checkForRealTimeUpdates)
+		{
+			this.isRealTimeUpdateAvailable().then(updateAvailable => {
+				if(updateAvailable)
+					this.getRealTimeUpdates().then(() => {
+						this.realTimeData = this.GTFSRealTimeMessage.decode(this.buffer);
+						console.log(this.realTimeData);
+
+					}) ;//THEN(), realtimeupdates = console.log(this.GTFSRealTimeMessage.decode(this.buffer));
+			});
+		}
 	},
 
 	getApiKey: function()
@@ -124,7 +101,6 @@ module.exports = NodeHelper.create({
 			this.getTrains(payload.context, this.getDay());
 		
 	},
-
 
 	getTrains(context, day="monday")
 	{
@@ -176,59 +152,112 @@ module.exports = NodeHelper.create({
 		 });
 	},
 
-
 	isStaticGTFSUpdateAvailable: function()
 	{		
-		const httpsoptions = {
-			protocol: "https:",
-			hostname: "api.transport.nsw.gov.au",
-			path: "/v1/publictransport/timetables/complete/gtfs",
-			method: 'HEAD',
-			headers: {"Authorization": "apikey " + this.apikey}
-		}
+		
+		const customPromise = new Promise((resolve, reject) => {
 
-		const req = https.request(httpsoptions, res => {
+			const httpsoptions = {
+				protocol: "https:",
+				hostname: "api.transport.nsw.gov.au",
+				path: "/v1/publictransport/timetables/complete/gtfs",
+				method: 'HEAD',
+				headers: {"Authorization": "apikey " + this.apikey}
+			}
+
+			const req = https.request(httpsoptions, res => {
+				if (res.statusCode == 200)
+				{
+					GTFSLastModified = new Date(res.headers["last-modified"]);
+
+					if(!this.GTFSLastModified || GTFSLastModified > this.GTFSLastModified)  // If last modified is unpopulated, update is available
+					{																					 // OR previous modification is before whats available
+						this.GTFSLastModified = GTFSLastModified; //PROBABLY SHOULD NOT SET THIS HERE, could cause super minor edge case if its updated between now and when pulled
+						resolve(true)
+					}
+				}
+				else
+					resolve(false);
+			});
+			req.end();
+		})
+		return customPromise;
+	},
+
+	isRealTimeUpdateAvailable: function() {
+
+		const customPromise = new Promise((resolve, reject) => {
+
+			const httpsoptions = {
+				protocol: "https:",
+				hostname: "api.transport.nsw.gov.au",
+				path: "/v2/gtfs/realtime/sydneytrains",
+				method: 'GET',
+				// method: 'HEAD', // This api endpoint is ridiculous and requires a cookie obtained by "GET" 
+										 // to provide me with 'HEAD', as such they deserve the overhead of GET's to check size
+										 //AS it turns out the whole 
+										 //header timestamp: 1678891581 can be used to figure out if we should update
+				headers: {"Authorization": "apikey " + this.apikey}
+			}
+			
+			const req = https.request(httpsoptions, res => {
 			if (res.statusCode == 200)
 			{
-				console.log(res.headers["last-modified"]);
-				GTFSLastModified = new Date(res.headers["last-modified"]);
-
-				if(!this.GTFSLastModified || GTFSLastModified > this.GTFSLastModified)  // If last modified is unpopulated, update is available
+				console.log(res.headers["last-modified"]); //Error here last-modifed dosen't exist
+				realTimeLastModified = new Date(res.headers["last-modified"]);
+				
+				if(!this.realTimeLastModified || realTimeLastModified > this.realTimeLastModified)  // If last modified is unpopulated, update is available
 				{																					 // OR previous modification is before whats available
-					this.GTFSLastModified = GTFSLastModified;
-					this.staticGTFSUpdateAvailable = true;
+					this.realTimeLastModified = realTimeLastModified; //PROBABLY SHOULD NOT SET THIS HERE, could cause super minor edge case if its updated between now and when pulled
+					resolve(true);
 				}
 			}
 			else
-				this.staticGTFSUpdateAvailable = false;
-		 });
-	 	req.end();
+				resolve(false);
+			});
+			req.end();
+		})
+		return customPromise;
 	},
 
 	getRealTimeUpdates: function()
 	{		
-		const httpsoptions = {
-			protocol: "https:",
-			hostname: "api.transport.nsw.gov.au",
-			path: "/v2/gtfs/realtime/sydneytrains",
-			method: 'GET',
-			headers: {"Authorization": "apikey " + this.apikey}
-		}
+		const customPromise = new Promise((resolve, reject) => {
 
-		const req = https.request(httpsoptions, res => {
-			if (res.statusCode == 200)
-			{
-				// console.log(res.headers);
-				res.on('data', (d) => {
-					// console.log(Object.prototype.toString.call(d)); //prints type
-					d.forEach(i => {
-						this.buffer.push(i);
-					});
-				 });
+			this.buffer = []; //Can clear the buffer after the transformation is done, would be more appropriate
+			const httpsoptions = {
+				protocol: "https:",
+				hostname: "api.transport.nsw.gov.au",
+				path: "/v2/gtfs/realtime/sydneytrains",
+				method: 'GET',
+				headers: {"Authorization": "apikey " + this.apikey}
 			}
 
-		 });
-	 	req.end();
+			const req = https.request(httpsoptions, res => {
+				if (res.statusCode == 200)
+				{	
+					res.on('data', (d) => {
+						d.forEach(i => {
+							this.buffer.push(i); //MAKE BUFFER LOCAL
+						});
+					});
+
+					res.on('end', () => {
+						resolve();
+					});
+				}
+				else
+					reject("Error: status code " + res.statusCode);
+
+			});
+			req.on('error', (e) => {
+				console.error(`problem with request: ${e.message}`);
+				reject(e.message);
+			});
+
+			req.end();
+		})
+		return customPromise;
 	}
 	
 });
