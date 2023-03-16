@@ -23,11 +23,9 @@ module.exports = NodeHelper.create({
 	maxTrains: 10,
 	apikey: "",
 	GTFSLastModified: null,
-	realTimeLastModified: null,
+	realTimeLastModified: null, //Perhaps down the road these can't stay, if I wanted to enable the plugin for different regions
 
-	messages: null,
 	GTFSRealTimeMessage: null,
-
 	realTimeData: {},
 
 	
@@ -186,8 +184,9 @@ module.exports = NodeHelper.create({
 		//TBH this function is unnecessary and does add overhead
 		//Originally thought to leave just in case modified is added to the header
 		//But bffr that will never happen.
+		// This is getting ugly probably remove...
 
-		const customPromise = new Promise((resolve, reject) => {
+		const availabilityPromise = new Promise((resolve, reject) => {
 
 			this.getRealTimeUpdates().then((buffer) => {
 				let feedMessage = this.GTFSRealTimeMessage.decode(buffer);
@@ -198,7 +197,7 @@ module.exports = NodeHelper.create({
 				reject(err); 
 			});
 		})
-		return customPromise;
+		return availabilityPromise;
 
 	},
 
@@ -219,13 +218,10 @@ module.exports = NodeHelper.create({
 				if (res.statusCode == 200)
 				{	
 					res.on('data', (d) => {
-						d.forEach(i => {
-							buffer.push(i);
-						});
+						d.forEach(i => { buffer.push(i); });
 					});
 
 					res.on('end', () => {
-						this.realTimeLastModified = Number.parseInt(feedMessage.header.timestamp); //Refresh the timestamp
 						resolve(buffer);
 					});
 				}
