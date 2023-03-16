@@ -94,58 +94,71 @@ module.exports = NodeHelper.create({
 		console.log("Notification: " + notification + " Payload: " + JSON.stringify(payload));
 		
 		if(notification === "GET_TRAINS") 
-			this.getTrains(payload.context, this.getDay());
+			this.getTrains(payload.context, this.getDay()).then((trains) => {
+				this.sendSocketNotification("ACTIVITY", {"id": payload.context.id, "trains": trains}  );
+			});
 		
 	},
 
-	getTrains(context, day="monday")
+	getTrains: function(context, day="monday")
 	{
-		context.maxTrains = Math.min(context.maxTrains, this.maxTrains);
-		db.serialize(() => {
-			
-			db.all(`select 
-							* 
-						from 
-							calendar c 
-							join (
-							select 
+
+		const customPromise = new Promise((resolve, reject) => {
+
+
+			context.maxTrains = Math.min(context.maxTrains, this.maxTrains);
+			db.serialize(() => {
+				
+				db.all(`select 
 								* 
 							from 
-								trips t 
+								calendar c 
 								join (
-									select 
+								select 
 									* 
-									from 
-									stop_times st 
-									JOIN (
+								from 
+									trips t 
+									join (
 										select 
-											p.stop_name, 
-											c.stop_name, 
-											c.stop_id 
+										* 
 										from 
-											stops p 
-											join stops c on p.stop_id = c.parent_station 
+										stop_times st 
+										JOIN (
+											select 
+												p.stop_name, 
+												c.stop_name, 
+												c.stop_id 
+											from 
+												stops p 
+												join stops c on p.stop_id = c.parent_station 
+											where 
+												p.stop_name = "${context.station}"
+										) target_stops on st.stop_id = target_stops.stop_id 
 										where 
-											p.stop_name = "${context.station}"
-									) target_stops on st.stop_id = target_stops.stop_id 
-									where 
-									st.departure_time >= "${context.departedAfter}"
-								) st on t.trip_id = st.trip_id
-							) t on c.service_id = t.service_id 
-						where 
-							c.${day} = 1 and c.start_date <= strftime('%Y%m%d', 'now') 
-							AND strftime('%Y%m%d', 'now') < c.end_date 
-						ORDER by 
-							t.departure_time 
-						LIMIT ${context.maxTrains}`, (err, trains) => {
-			  if (err) {
-				 console.error(err.message);
-			  }
-				console.log(trains);
-				this.sendSocketNotification("ACTIVITY", {"id": context.id, "trains": trains}  );
-			});
+										st.departure_time >= "${context.departedAfter}"
+									) st on t.trip_id = st.trip_id
+								) t on c.service_id = t.service_id 
+							where 
+								c.${day} = 1 and c.start_date <= strftime('%Y%m%d', 'now') 
+								AND strftime('%Y%m%d', 'now') < c.end_date 
+							ORDER by 
+								t.departure_time 
+							LIMIT ${context.maxTrains}`, (err, trains) => {
+				  if (err) {
+					 console.error(err.message);
+					//  reject(err);
+					// reject();
+				  }
+					// console.log(trains);
+					resolve(trains);
+					// this.sendSocketNotification("ACTIVITY", {"id": context.id, "trains": trains}  );
+				});
+			 });
+			//  reject();
+		});
 
-		 });
+		return customPromise;
+
 	},
 
 	isStaticGTFSUpdateAvailable: function()
