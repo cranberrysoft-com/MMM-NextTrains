@@ -26,7 +26,6 @@ module.exports = NodeHelper.create({
 	realTimeLastModified: null,
 
 	messages: null,
-	buffer: [],
 	GTFSRealTimeMessage: null,
 
 	realTimeData: {},
@@ -55,7 +54,7 @@ module.exports = NodeHelper.create({
 		{
 			this.isStaticGTFSUpdateAvailable().then(updateAvailable => {
 				if(updateAvailable)
-					updateGTFSData();
+					this.updateGTFSData();
 			});
 		}
 
@@ -63,11 +62,10 @@ module.exports = NodeHelper.create({
 		{
 			this.isRealTimeUpdateAvailable().then(updateAvailable => {
 				if(updateAvailable)
-					this.getRealTimeUpdates().then(() => {
-						this.realTimeData = this.GTFSRealTimeMessage.decode(this.buffer);
+					this.getRealTimeUpdates().then((buffer) => {
+						this.realTimeData = this.GTFSRealTimeMessage.decode(buffer);
 						console.log(this.realTimeData);
-
-					}) ;//THEN(), realtimeupdates = console.log(this.GTFSRealTimeMessage.decode(this.buffer));
+					});
 			});
 		}
 	},
@@ -185,46 +183,29 @@ module.exports = NodeHelper.create({
 	},
 
 	isRealTimeUpdateAvailable: function() {
+		//TBH this function is unnecessary and does add overhead
+		//Originally thought to leave just in case modified is added to the header
+		//But bffr that will never happen.
 
 		const customPromise = new Promise((resolve, reject) => {
 
-			const httpsoptions = {
-				protocol: "https:",
-				hostname: "api.transport.nsw.gov.au",
-				path: "/v2/gtfs/realtime/sydneytrains",
-				method: 'GET',
-				// method: 'HEAD', // This api endpoint is ridiculous and requires a cookie obtained by "GET" 
-										 // to provide me with 'HEAD', as such they deserve the overhead of GET's to check size
-										 //AS it turns out the whole 
-										 //header timestamp: 1678891581 can be used to figure out if we should update
-				headers: {"Authorization": "apikey " + this.apikey}
-			}
-			
-			const req = https.request(httpsoptions, res => {
-			if (res.statusCode == 200)
-			{
-				console.log(res.headers["last-modified"]); //Error here last-modifed dosen't exist
-				realTimeLastModified = new Date(res.headers["last-modified"]);
-				
-				if(!this.realTimeLastModified || realTimeLastModified > this.realTimeLastModified)  // If last modified is unpopulated, update is available
-				{																					 // OR previous modification is before whats available
-					this.realTimeLastModified = realTimeLastModified; //PROBABLY SHOULD NOT SET THIS HERE, could cause super minor edge case if its updated between now and when pulled
-					resolve(true);
-				}
-			}
-			else
-				resolve(false);
+			this.getRealTimeUpdates().then((buffer) => {
+				let feedMessage = this.GTFSRealTimeMessage.decode(buffer);
+				let lastModified = Number.parseInt(feedMessage.header.timestamp);
+
+				resolve( !this.realTimeLastModified || this.realTimeLastModified < lastModified );				
+			}).catch(  (err) => { 
+				reject(err); 
 			});
-			req.end();
 		})
 		return customPromise;
+
 	},
 
 	getRealTimeUpdates: function()
 	{		
 		const customPromise = new Promise((resolve, reject) => {
 
-			this.buffer = []; //Can clear the buffer after the transformation is done, would be more appropriate
 			const httpsoptions = {
 				protocol: "https:",
 				hostname: "api.transport.nsw.gov.au",
@@ -232,18 +213,20 @@ module.exports = NodeHelper.create({
 				method: 'GET',
 				headers: {"Authorization": "apikey " + this.apikey}
 			}
-
+			
+			buffer = [];
 			const req = https.request(httpsoptions, res => {
 				if (res.statusCode == 200)
 				{	
 					res.on('data', (d) => {
 						d.forEach(i => {
-							this.buffer.push(i); //MAKE BUFFER LOCAL
+							buffer.push(i);
 						});
 					});
 
 					res.on('end', () => {
-						resolve();
+						this.realTimeLastModified = Number.parseInt(feedMessage.header.timestamp); //Refresh the timestamp
+						resolve(buffer);
 					});
 				}
 				else
@@ -259,5 +242,4 @@ module.exports = NodeHelper.create({
 		})
 		return customPromise;
 	}
-	
 });
