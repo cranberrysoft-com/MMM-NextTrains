@@ -100,9 +100,28 @@ Module.register("NextTrains", {
         return header_row
     },
 
-    createTableRow: function(destination_name, route_name, local_time, secondDelayed=0) {
+    getDelayClass: function(type)
+    {
+        let cssClass = "";
+        if(type == -1)
+            cssClass = "early-mild"
+        else if(type == 0)
+            cssClass = "";
+        else if(type == 1)
+            cssClass = "late-mild";
+        else if(type == 2)
+            cssClass = "late-critical";
+
+        return cssClass;
+    },
+
+    createTrainRow: function(destination_name, route_name, local_time, secondsDelayed=0, type=0) {
         let row = document.createElement('tr');
         row.className = "align-left small normal";
+
+        let classA = this.getDelayClass(this.getDelayType(secondsDelayed));
+        if(classA != "")
+            row.classList.add(   classA   );
         
         let destination = document.createElement('td');
         let route = document.createElement('td');
@@ -112,18 +131,18 @@ Module.register("NextTrains", {
         destination.innerText = destination_name.split(' ').pop();
         route.innerText = route_name;
         time.innerText = local_time;
-        if(secondDelayed >= this.config.lateCriticalLimit)
+        if(secondsDelayed >= this.config.lateCriticalLimit)
         {
             delay.classList.add("late-critical");
-            delay.innerText = "+" + secondDelayed;
+            delay.innerText = "+" + secondsDelayed;
         }
-        else if ( secondDelayed > 0)
+        else if ( secondsDelayed > 0)
         {
             delay.classList.add("late-mild");
-            delay.innerText = "+" + secondDelayed;
+            delay.innerText = "+" + secondsDelayed;
         }
         else
-            delay.innerText = secondDelayed;
+            delay.innerText = secondsDelayed;
 
         
         row.appendChild(destination);
@@ -147,16 +166,29 @@ Module.register("NextTrains", {
         this.trains.forEach(t => {
             let minsUntilTrain = this.getMinutesDiff(this.getDateTime(t.departure_time), new Date());
             
-            let latemins = this.findLateMins(t)
-
-            row = this.createTableRow( t["stop_name:1"], t.trip_headsign, minsUntilTrain+"m" + " - " + t.departure_time, latemins);
+            let lateSeconds = this.findLateSeconds(t)
+            console.log(minsUntilTrain);
+            let delayType = this.getDelayType(lateSeconds);
+            row = this.createTrainRow( t["stop_name:1"], t.trip_headsign, minsUntilTrain+"m" + " - " + t.departure_time, lateSeconds, delayType);
             wrapper.appendChild(row)
         });
 
         return wrapper;
     },
 
-    findLateMins: function(train) {
+    getDelayType: function(secondsLate) {
+        let type = 0;
+        if(secondsLate >= this.config.lateCriticalLimit)
+            type = 2;
+        else if(secondsLate > 0)
+            type = 1;
+        else if(secondsLate < -1)
+            type = -1;
+
+        return type;
+    },
+
+    findLateSeconds: function(train) {
 
         if (!this.realTimeUpdates) {
             return 0;
