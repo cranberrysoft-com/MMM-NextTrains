@@ -15,7 +15,8 @@ Module.register("NextTrains", {
     defaults: {
         updateInterval : 10, //Seconds before changeing
         station: "",
-        maxTrains: 4
+        maxTrains: 4,
+        lateCriticalLimit: 600
     },
 
     context: {
@@ -81,37 +82,56 @@ Module.register("NextTrains", {
         header_row.className = "align-left regular xsmall dimmed"
         
         let header_destination = document.createElement('td')
-        let route_time = document.createElement('td')
+        let route = document.createElement('td')
         let header_time = document.createElement('td')
+        let delay = document.createElement('td')
 
         
         header_destination.innerText = "Platform"
-        route_time.innerText = "Route"
+        route.innerText = "Route"
         header_time.innerText = "Departs"
+        delay.innerText = "Delay";
         
-        header_row.appendChild(header_destination)
-        header_row.appendChild(route_time)
-        header_row.appendChild(header_time)
+        header_row.appendChild(header_destination);
+        header_row.appendChild(route);
+        header_row.appendChild(header_time);
+        header_row.appendChild(delay);
+        
         return header_row
     },
 
-    createTableRow: function(destination_name, local_time, route_name) {
-        let row = document.createElement('tr')
-        row.className = "align-left small normal"
+    createTableRow: function(destination_name, route_name, local_time, secondDelayed=0) {
+        let row = document.createElement('tr');
+        row.className = "align-left small normal";
         
-        let destination = document.createElement('td')
-        let route = document.createElement('td')
-        let time = document.createElement('td')
+        let destination = document.createElement('td');
+        let route = document.createElement('td');
+        let time = document.createElement('td');
+        let delay = document.createElement('td');
 
-        destination.innerText = destination_name.split(' ').pop()
+        destination.innerText = destination_name.split(' ').pop();
         route.innerText = route_name;
-        time.innerText = local_time
+        time.innerText = local_time;
+        if(secondDelayed >= this.config.lateCriticalLimit)
+        {
+            delay.classList.add("late-critical");
+            delay.innerText = "+" + secondDelayed;
+        }
+        else if ( secondDelayed > 0)
+        {
+            delay.classList.add("late-mild");
+            delay.innerText = "+" + secondDelayed;
+        }
+        else
+            delay.innerText = secondDelayed;
 
         
-        row.appendChild(destination)
-        row.appendChild(route)
-        row.appendChild(time)
-        return row
+        row.appendChild(destination);
+        row.appendChild(route);
+        row.appendChild(time);
+        row.appendChild(delay);
+
+        return row;
     },
 
     getDom: function() {
@@ -129,7 +149,7 @@ Module.register("NextTrains", {
             
             let latemins = this.findLateMins(t)
 
-            row = this.createTableRow( t["stop_name:1"], minsUntilTrain+"m" + " - " + t.departure_time + " +" + latemins, t.trip_headsign)
+            row = this.createTableRow( t["stop_name:1"], t.trip_headsign, minsUntilTrain+"m" + " - " + t.departure_time, latemins);
             wrapper.appendChild(row)
         });
 

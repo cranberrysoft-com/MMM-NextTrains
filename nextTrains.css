@@ -11,3 +11,12 @@
 td {
   padding-right: 20px;
 }
+
+
+.late-mild {
+  color:yellow;
+}
+
+.late-critical {
+  color:red;
+}
