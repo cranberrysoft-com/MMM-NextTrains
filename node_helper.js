@@ -20,7 +20,7 @@ module.exports = NodeHelper.create({
 		//config to real time interval
 	},
 
-	maxTrains: 10,
+	maxTrains: 50,
 	apikey: "",
 	GTFSLastModified: null,
 	realTimeLastModified: null, //Perhaps down the road these can't stay, if I wanted to enable the plugin for different regions
@@ -36,6 +36,8 @@ module.exports = NodeHelper.create({
 		//Protobuffer setup for realtime updates
 		let root = protobuf.loadSync("./modules/NextTrains/gtfs-realtime.proto");
 		this.GTFSRealTimeMessage = root.lookupType("transit_realtime.FeedMessage");
+
+		this.checkForUpdates()
 
 		setInterval(() => {
 			this.checkForUpdates();
@@ -62,11 +64,35 @@ module.exports = NodeHelper.create({
 				if(updateAvailable)
 					this.getRealTimeUpdates().then((buffer) => {
 						this.realTimeData = this.GTFSRealTimeMessage.decode(buffer);
-						console.log(this.realTimeData);
+						// console.log(this.realTimeData);
+						// this.processRealTime(this.realTimeData);
 					});
 			});
 		}
 	},
+
+	processRealTime: function(data) {
+		
+		for (let i = 0; i < data.entity.length; i++) {
+			
+			let type = data.entity[i].tripUpdate.trip.scheduleRelationship;
+			if(type == 0) // SCHEDULED //0 SCHEDULED, 
+			{
+				// console.log(data.entity[i].tripUpdate.trip  )
+				console.log("\n\n\n");
+				// console.log(JSON.stringify(data.entity[i].tripUpdate)  );
+				// console.log(data.entity[i].tripUpdate.trip.scheduleRelationship);
+
+				console.log(JSON.stringify(data.entity[i].tripUpdate));
+				console.log("_________________________________________");
+				console.log(JSON.stringify(data.entity[i].tripUpdate.stopTimeUpdate));
+				console.log(data.entity[i].tripUpdate.stopTimeUpdate.length);
+			}
+			else if(type == 5){}	
+		}
+	},
+
+
 
 	getApiKey: function()
 	{
@@ -97,6 +123,10 @@ module.exports = NodeHelper.create({
 			this.getTrains(payload.context, this.getDay()).then((trains) => {
 				this.sendSocketNotification("ACTIVITY", {"id": payload.context.id, "trains": trains}  );
 			});
+		else if(notification === "GET_REALTIME") // RealTime is provided on request, otherwise there is no trivial way for client to track which front end owns which RELATIME
+		{
+			this.sendSocketNotification("REALTIME_DATA", {"id": payload.context.id, "updates": this.realTimeData}  );
+		}
 		
 	},
 
@@ -140,21 +170,16 @@ module.exports = NodeHelper.create({
 								) t on c.service_id = t.service_id 
 							where 
 								c.${day} = 1 and c.start_date <= strftime('%Y%m%d', 'now') 
-								AND strftime('%Y%m%d', 'now') < c.end_date 
+								AND strftime('%Y%m%d', 'now') <= c.end_date 
 							ORDER by 
 								t.departure_time 
 							LIMIT ${context.maxTrains}`, (err, trains) => {
 				  if (err) {
-					 console.error(err.message);
-					//  reject(err);
-					// reject();
-				  }
-					// console.log(trains);
+					  console.error(err.message);
+					}
 					resolve(trains);
-					// this.sendSocketNotification("ACTIVITY", {"id": context.id, "trains": trains}  );
 				});
 			 });
-			//  reject();
 		});
 
 		return customPromise;

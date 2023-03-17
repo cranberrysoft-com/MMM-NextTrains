@@ -8,6 +8,7 @@
 Module.register("NextTrains", {
     
     trains: [],
+    realTimeUpdates: null,
     welcomeMessage: "Welcome to NextTrains!",
     welcomed: false,
     // Default module config.
@@ -25,15 +26,16 @@ Module.register("NextTrains", {
     },
 
     start: function() {
-
         this.config.updateInterval = this.config.updateInterval * 1000
         this.context.id = this.identifier;
         this.context.station = this.config.station;
         this.context.maxTrains = this.config.maxTrains;
 
+        this.getRealTimeUpdates();
         this.getTrains();
         setInterval(() => {
             this.getTrains();
+            this.getRealTimeUpdates();
         }, this.config.updateInterval);
 
     },
@@ -50,25 +52,6 @@ Module.register("NextTrains", {
         return x
     },
 
-
-    getDom: function() {
-
-        if(this.trains.length == 0)
-            return this.initialMessage()
-
-        const wrapper = document.createElement("table");
-        const header_row = this.createTableHeader()
-        wrapper.appendChild(header_row)
-
-        let row = null
-        this.trains.forEach(t => {
-            let minsUntilTrain = this.getMinutesDiff(this.getDateTime(t.departure_time), new Date());
-            row = this.createTableRow( t["stop_name:1"], minsUntilTrain+"m" + " - " + t.departure_time, t.trip_headsign)
-            wrapper.appendChild(row)
-        });
-
-        return wrapper;
-    },
 
     getDateTime: function(time)
     {
@@ -123,46 +106,110 @@ Module.register("NextTrains", {
         destination.innerText = destination_name.split(' ').pop()
         route.innerText = route_name;
         time.innerText = local_time
-        
-        // if(this.config.etd) {
 
-        //     let etd = local_time
-        //     time.innerText = etd + " mins"
-        //     if(etd == 0) {
-        //         time.innerText = "now"
-        //     }
-        // }
         
         row.appendChild(destination)
         row.appendChild(route)
         row.appendChild(time)
         return row
-
     },
 
-   socketNotificationReceived: function(notification, payload) {
-        
-    if (notification === "ACTIVITY") {
+    getDom: function() {
 
-        console.log(payload);
-        if(payload.id == this.context.id)
-        {
-            this.trains = payload.trains;
-            this.updateDom(1000);
+        if(this.trains.length == 0)
+            return this.initialMessage()
+
+        const wrapper = document.createElement("table");
+        const header_row = this.createTableHeader()
+        wrapper.appendChild(header_row)
+
+        let row = null
+        this.trains.forEach(t => {
+            let minsUntilTrain = this.getMinutesDiff(this.getDateTime(t.departure_time), new Date());
+            
+            let latemins = this.findLateMins(t)
+
+            row = this.createTableRow( t["stop_name:1"], minsUntilTrain+"m" + " - " + t.departure_time + " +" + latemins, t.trip_headsign)
+            wrapper.appendChild(row)
+        });
+
+        return wrapper;
+    },
+
+    findLateMins: function(train) {
+
+        if (!this.realTimeUpdates) {
+            return 0;
         }
-    }
+
+        // //Check that realtimeupdates exists
+        console.log("findLateMins()");
+        let arr = this.realTimeUpdates.entity;
+        for (let i in arr) {
+                
+            let type = arr[i].tripUpdate.trip.scheduleRelationship;
+            if(type == undefined || type == "SCHEDULED") 
+            {   
+                if(train.trip_id == arr[i].tripUpdate.trip.tripId )    
+                {
+                    // console.log(type);
+                    console.log(train);
+                    console.log(arr[i].tripUpdate)
+
+
+                    for (let j in arr[i].tripUpdate.stopTimeUpdate) 
+                    {
+                        if(arr[i].tripUpdate.stopTimeUpdate[j].stopId == train.stop_id)
+                        {
+                            return arr[i].tripUpdate.stopTimeUpdate[j].arrival.delay;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        return 0;
+    },
+
+
+   socketNotificationReceived: function(notification, payload) {
+
+        if(payload.id != this.context.id)
+        {
+            console.log(payload); // Only print payload if we own it
+            return;
+        }
+        
+        if (notification === "ACTIVITY")
+            this.trains = payload.trains;
+        else if(notification === "REALTIME_DATA")
+            this.realTimeUpdates = payload.updates;
+
+        this.updateDom(1000);
     },
 
     getTrains: function() {
         Log.info(this.name + ": Getting trains");
-
+        
         let now = new Date(); 
         this.context.departedAfter = now.toLocaleTimeString(); //Retrieve trains from after now
 
         this.sendSocketNotification("GET_TRAINS", {
-            context: this.context
+            context: this.context 
         });
     },
+
+    getRealTimeUpdates: function() {
+        Log.info(this.name + ": Getting real time updates");
+
+        this.sendSocketNotification("GET_REALTIME", {
+            context: this.context//Needs its own context, tbh maybe both context should be local to their function..investigate
+        });
+    },
+
+
+    
 
     // Define required styles.
     getStyles: function() {
