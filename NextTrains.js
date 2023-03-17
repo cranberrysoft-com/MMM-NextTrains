@@ -173,15 +173,20 @@ Module.register("NextTrains", {
                 if(train.trip_id == arr[i].tripUpdate.trip.tripId )    
                 {
                     // console.log(type);
-                    console.log(train);
-                    console.log(arr[i].tripUpdate)
-
-
+                    
+                    
                     for (let j in arr[i].tripUpdate.stopTimeUpdate) 
                     {
                         if(arr[i].tripUpdate.stopTimeUpdate[j].stopId == train.stop_id)
                         {
-                            return arr[i].tripUpdate.stopTimeUpdate[j].arrival.delay;
+                            // if( arr[i].tripUpdate.stopTimeUpdate[j].arrival.delay != 0 || arr[i].tripUpdate.stopTimeUpdate[j].arrival.delay != 0)
+                            // {
+
+                            //     console.log(train);
+                            //     console.log(arr[i].tripUpdate)
+                            // }
+
+                            return arr[i].tripUpdate.stopTimeUpdate[j].departure.delay;
                         }
                     }
                 }
