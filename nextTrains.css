@@ -14,11 +14,13 @@ td {
 
 
 .late-mild {
-  color:yellow;
+  /* color:yellow; */
+  color:#FEC600;
 }
 
 .late-critical {
-  color:red;
+  /* color:red; */
+  color:#8B0000;
 }
 
 .early-mild {
