@@ -168,7 +168,7 @@ Module.register("NextTrains", {
             let minsUntilTrain = this.getMinutesDiff(this.getDateTime(t.departure_time), new Date());
             
             let lateSeconds = this.findLateSeconds(t)
-            console.log(t.departure_time);
+            // console.log(t.departure_time);
             let adjustedDepartureTime = this.getDateTime(t.departure_time);
             // adjustedDepartureTime.setMinutes(adjustedDepartureTime.getMinutes() + parseInt(lateSeconds/60))
             adjustedDepartureTime.setSeconds(adjustedDepartureTime.getSeconds() + lateSeconds);
@@ -214,8 +214,6 @@ Module.register("NextTrains", {
             return 0;
         }
 
-        // //Check that realtimeupdates exists
-        console.log("findLateMins()");
         let arr = this.realTimeUpdates.entity;
         for (let i in arr) {
                 
