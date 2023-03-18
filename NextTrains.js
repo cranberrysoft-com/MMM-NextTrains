@@ -5,6 +5,7 @@
  * MIT Licensed.
  */
 
+
 Module.register("NextTrains", {
     
     trains: [],
@@ -167,9 +168,28 @@ Module.register("NextTrains", {
             let minsUntilTrain = this.getMinutesDiff(this.getDateTime(t.departure_time), new Date());
             
             let lateSeconds = this.findLateSeconds(t)
-            console.log(minsUntilTrain);
+            console.log(t.departure_time);
+            let adjustedDepartureTime = this.getDateTime(t.departure_time);
+            // adjustedDepartureTime.setMinutes(adjustedDepartureTime.getMinutes() + parseInt(lateSeconds/60))
+            adjustedDepartureTime.setSeconds(adjustedDepartureTime.getSeconds() + lateSeconds);
+            
+            adjustedDepartureTime = adjustedDepartureTime.toLocaleTimeString();
+
+            
             let delayType = this.getDelayType(lateSeconds);
-            row = this.createTrainRow( t["stop_name:1"], t.trip_headsign, minsUntilTrain+"m" + " - " + t.departure_time, lateSeconds, delayType);
+            //CHECK LAYER //DEPARTURE TIME TO STILL BE SET
+
+            // console.log(adjustedDepartureTime.toLocaleTimeString());
+            
+            row = this.createTrainRow( t["stop_name:1"],
+            t.trip_headsign,
+            (minsUntilTrain + parseInt(lateSeconds/60))+"m" + " - " + t.departure_time + "(" + adjustedDepartureTime + ")",
+            lateSeconds, delayType);
+
+            // row = this.createTrainRow( t["stop_name:1"],
+            //                            t.trip_headsign,
+            //                            (minsUntilTrain + parseInt(lateSeconds/60))+"m" + " - " + t.departure_time,
+            //                            lateSeconds, delayType);
             wrapper.appendChild(row)
         });
 
