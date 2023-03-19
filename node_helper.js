@@ -4,6 +4,7 @@ const sqlite3 = require('sqlite3').verbose();
 var https = require('https');
 const fs = require('fs');
 var protobuf = require("protobufjs");
+const decompress = require('decompress');
 
 let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_READWRITE, (err) => {
     if (err)
@@ -14,7 +15,7 @@ let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_REA
 
 module.exports = NodeHelper.create({
 	config: {
-		checkForGTFSUpdates: true,
+		checkForGTFSUpdates: false,
 		checkForRealTimeUpdates: true
 		//config to set GTFS static interval
 		//config to real time interval
@@ -44,8 +45,75 @@ module.exports = NodeHelper.create({
 		}, 5000);
 	},
 
+	buildDatabase: function () {
+		const { spawn } = require('child_process');
+		// Define the path of the Bash script you want to run
+		const pathToBashFile = './create_db.sh';
+		// Define the path you want to execute the Bash script from
+		const executePath = './modules/NextTrains/dist/';
+		// Spawn a child process to execute the Bash script from the specified path
+		const childProcess = spawn('bash', [pathToBashFile], { cwd: executePath });
+		// Handle the output of the Bash script
+		childProcess.stdout.on('data', (data) => {
+		  console.log(`stdout: ${data}`);
+		});
+		// Handle any errors that occur while running the Bash script
+		childProcess.on('error', (error) => {
+		  console.error(`error: ${error}`);
+		});
+		// Handle the end of the Bash script
+		childProcess.on('close', (code) => {
+		  console.log(`child process exited with code ${code}`);
+		});
+	},
+
+	// decompressGTFS: function () {
+	// 	decompress('./modules/NextTrains/StaticGTFS.zip', './modules/NextTrains/dist').then(files => {
+	// 		console.log('done!');
+	//   });
+	// },
+
+	downloadGTFSData: function () {
+
+		const customPromise = new Promise((resolve, reject) => {
+
+			const httpsoptions = {
+				protocol: "https:",
+				hostname: "api.transport.nsw.gov.au",
+				path: "/v1/gtfs/schedule/sydneytrains",
+				method: 'GET',
+				headers: {"Authorization": "apikey " + this.apikey}
+			}
+
+			const req = https.request(httpsoptions, res => {
+				if (res.statusCode == 200)
+				{
+					const path = `./modules/NextTrains/StaticGTFS.zip`; 
+					const filePath = fs.createWriteStream(path);
+					res.pipe(filePath);
+					filePath.on('finish',() => {
+						 filePath.close();
+						 console.log('Download Completed'); 
+						 resolve();
+					})
+				}
+				else
+					reject();
+			});
+			req.end();
+		})
+		return customPromise;
+	},
+
+
 	updateGTFSData: function () {
+
 		console.log("(STUB) Updating static GTFS database...");
+		this.downloadGTFSData().then(() => {
+			decompress('./modules/NextTrains/StaticGTFS.zip', './modules/NextTrains/dist').then(() => {
+				this.buildDatabase();
+			})
+		});	
 	},
 
 	checkForUpdates: function()
@@ -194,7 +262,7 @@ module.exports = NodeHelper.create({
 			const httpsoptions = {
 				protocol: "https:",
 				hostname: "api.transport.nsw.gov.au",
-				path: "/v1/publictransport/timetables/complete/gtfs",
+				path: "/v1/gtfs/schedule/sydneytrains",
 				method: 'HEAD',
 				headers: {"Authorization": "apikey " + this.apikey}
 			}
