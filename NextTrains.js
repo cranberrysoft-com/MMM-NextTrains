@@ -91,7 +91,7 @@ Module.register("NextTrains", {
         header_destination.innerText = "Platform"
         route.innerText = "Route"
         header_time.innerText = "Departs"
-        delay.innerText = "Delay";
+        delay.innerText = "Delay (min)";
         
         header_row.appendChild(header_destination);
         header_row.appendChild(route);
@@ -135,15 +135,20 @@ Module.register("NextTrains", {
         if(secondsDelayed >= this.config.lateCriticalLimit)
         {
             delay.classList.add("late-critical");
-            delay.innerText = "+" + secondsDelayed;
+            delay.innerText = "+" + parseInt(secondsDelayed/60);
+            // delay.innerText = "+" + secondsDelayed;
         }
         else if ( secondsDelayed > 0)
         {
             delay.classList.add("late-mild");
-            delay.innerText = "+" + secondsDelayed;
+            delay.innerText = "+" + parseInt(secondsDelayed/60);
+            // delay.innerText = "+" + secondsDelayed;
         }
         else
-            delay.innerText = secondsDelayed;
+        {
+            // delay.innerText = parseInt(secondsDelayed/60);
+            // delay.innerText = secondsDelayed;
+        }
 
         
         row.appendChild(destination);
@@ -177,19 +182,20 @@ Module.register("NextTrains", {
 
             
             let delayType = this.getDelayType(lateSeconds);
-            //CHECK LAYER //DEPARTURE TIME TO STILL BE SET
+            //CHECK LATER //DEPARTURE TIME TO STILL BE SET
 
             // console.log(adjustedDepartureTime.toLocaleTimeString());
-            
+
             row = this.createTrainRow( t["stop_name:1"],
             t.trip_headsign,
-            (minsUntilTrain + parseInt(lateSeconds/60))+"m" + " - " + t.departure_time + "(" + adjustedDepartureTime + ")",
+            (minsUntilTrain + parseInt(lateSeconds/60))+"m" + " - " + adjustedDepartureTime,
             lateSeconds, delayType);
-
+            
             // row = this.createTrainRow( t["stop_name:1"],
-            //                            t.trip_headsign,
-            //                            (minsUntilTrain + parseInt(lateSeconds/60))+"m" + " - " + t.departure_time,
-            //                            lateSeconds, delayType);
+            // t.trip_headsign,
+            // (minsUntilTrain + parseInt(lateSeconds/60))+"m" + " - " + t.departure_time + "(" + adjustedDepartureTime + ")",
+            // lateSeconds, delayType);
+
             wrapper.appendChild(row)
         });
 
@@ -222,22 +228,10 @@ Module.register("NextTrains", {
             {   
                 if(train.trip_id == arr[i].tripUpdate.trip.tripId )    
                 {
-                    // console.log(type);
-                    
-                    
                     for (let j in arr[i].tripUpdate.stopTimeUpdate) 
                     {
                         if(arr[i].tripUpdate.stopTimeUpdate[j].stopId == train.stop_id)
-                        {
-                            // if( arr[i].tripUpdate.stopTimeUpdate[j].arrival.delay != 0 || arr[i].tripUpdate.stopTimeUpdate[j].arrival.delay != 0)
-                            // {
-
-                            //     console.log(train);
-                            //     console.log(arr[i].tripUpdate)
-                            // }
-
                             return arr[i].tripUpdate.stopTimeUpdate[j].departure.delay;
-                        }
                     }
                 }
             }
