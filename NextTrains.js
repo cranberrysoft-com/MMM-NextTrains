@@ -17,7 +17,9 @@ Module.register("NextTrains", {
         updateInterval : 10, //Seconds before changeing
         station: "",
         maxTrains: 4,
-        lateCriticalLimit: 600
+        lateCriticalLimit: 600,
+        etd: false,
+        debug: false
     },
 
     context: {
@@ -91,7 +93,8 @@ Module.register("NextTrains", {
         header_destination.innerText = "Platform"
         route.innerText = "Route"
         header_time.innerText = "Departs"
-        delay.innerText = "Delay (min)";
+        // delay.innerText = "Delay (min)";
+        delay.innerText = "";
         
         header_row.appendChild(header_destination);
         header_row.appendChild(route);
@@ -135,13 +138,13 @@ Module.register("NextTrains", {
         if(secondsDelayed >= this.config.lateCriticalLimit)
         {
             delay.classList.add("late-critical");
-            delay.innerText = "+" + parseInt(secondsDelayed/60);
+            delay.innerText = "+" + parseInt(secondsDelayed/60) + "m";
             // delay.innerText = "+" + secondsDelayed;
         }
         else if ( secondsDelayed > 0)
         {
             delay.classList.add("late-mild");
-            delay.innerText = "+" + parseInt(secondsDelayed/60);
+            delay.innerText = "+" + parseInt(secondsDelayed/60) + "m";
             // delay.innerText = "+" + secondsDelayed;
         }
         else
@@ -173,28 +176,33 @@ Module.register("NextTrains", {
             let minsUntilTrain = this.getMinutesDiff(this.getDateTime(t.departure_time), new Date());
             
             let lateSeconds = this.findLateSeconds(t)
-            // console.log(t.departure_time);
             let adjustedDepartureTime = this.getDateTime(t.departure_time);
-            // adjustedDepartureTime.setMinutes(adjustedDepartureTime.getMinutes() + parseInt(lateSeconds/60))
             adjustedDepartureTime.setSeconds(adjustedDepartureTime.getSeconds() + lateSeconds);
-            
             adjustedDepartureTime = adjustedDepartureTime.toLocaleTimeString();
-
             
             let delayType = this.getDelayType(lateSeconds);
-            //CHECK LATER //DEPARTURE TIME TO STILL BE SET
 
-            // console.log(adjustedDepartureTime.toLocaleTimeString());
-
-            row = this.createTrainRow( t["stop_name:1"],
-            t.trip_headsign,
-            (minsUntilTrain + parseInt(lateSeconds/60))+"m" + " - " + adjustedDepartureTime,
-            lateSeconds, delayType);
-            
-            // row = this.createTrainRow( t["stop_name:1"],
-            // t.trip_headsign,
-            // (minsUntilTrain + parseInt(lateSeconds/60))+"m" + " - " + t.departure_time + "(" + adjustedDepartureTime + ")",
-            // lateSeconds, delayType);
+            if(this.config.debug)
+            {
+                row = this.createTrainRow( t["stop_name:1"],
+                t.trip_headsign,
+                (minsUntilTrain + parseInt(lateSeconds/60))+"m" + " - " + t.departure_time + " (" + adjustedDepartureTime + ")",
+                lateSeconds, delayType);
+            }
+            else if(this.config.etd)
+            {
+                row = this.createTrainRow( t["stop_name:1"],
+                t.trip_headsign,
+                adjustedDepartureTime,
+                lateSeconds, delayType);
+            }
+            else
+            {
+                row = this.createTrainRow( t["stop_name:1"],
+                t.trip_headsign,
+                (minsUntilTrain + parseInt(lateSeconds/60))+"m",
+                lateSeconds, delayType);
+            }
 
             wrapper.appendChild(row)
         });
