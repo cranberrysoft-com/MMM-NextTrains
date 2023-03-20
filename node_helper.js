@@ -27,7 +27,6 @@ module.exports = NodeHelper.create({
 
 	GTFSRealTimeMessage: null,
 	realTimeData: {},
-
 	
 	start: function() {
 		console.log("Starting node helper: " + this.name);

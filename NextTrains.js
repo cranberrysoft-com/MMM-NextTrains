@@ -5,7 +5,6 @@
  * MIT Licensed.
  */
 
-
 Module.register("NextTrains", {
     
     trains: [],
@@ -64,7 +63,7 @@ Module.register("NextTrains", {
         return new Date(datestring + "T" + time)
     },
 
-    getMinutesDiff: function(d1, d2)
+    getDifferenceInMinutes: function(d1, d2)
     {
         var diffMs = (d1 - d2); // milliseconds between d1 & d2
         // var diffDays = Math.floor(diffMs / 86400000); // days
@@ -116,36 +115,44 @@ Module.register("NextTrains", {
         return cssClass;
     },
 
+    getDelayFormat: function(secondsDelayed)
+    {
+        let delay = document.createElement('td');
+
+        if(secondsDelayed >= this.config.lateCriticalLimit)
+        {
+            delay.classList.add("late-critical"); //CHECK IF THIS I NEEDED
+            delay.innerText = "+" + parseInt(secondsDelayed/60) + "m";
+            // delay.innerText = "+" + secondsDelayed;
+        }
+        else if ( secondsDelayed > 0)
+        {
+            delay.classList.add("late-mild"); //CHECK IF THIS I NEEDED
+            delay.innerText = "+" + parseInt(secondsDelayed/60) + "m";
+            // delay.innerText = "+" + secondsDelayed;
+        }
+
+        return delay;
+    },
+
+
     createTrainRow: function(destination_name, route_name, departure, secondsDelayed=0, type=0) {
         let row = document.createElement('tr');
         row.className = "align-left small normal";
 
         let classA = this.getDelayClass(this.getDelayType(secondsDelayed));
         if(classA != "")
-            row.classList.add(   classA   );
+            row.classList.add(   classA   ); //CHECK IF THIS I NEEDED against getDelayFormat()
         
         let destination = document.createElement('td');
         let route = document.createElement('td');
         let time = document.createElement('td');
-        let delay = document.createElement('td');
+        let delay = this.getDelayFormat(secondsDelayed);
 
         destination.innerText = destination_name;
         route.innerText = route_name;
         time.innerText = departure;
-        if(secondsDelayed >= this.config.lateCriticalLimit)
-        {
-            delay.classList.add("late-critical");
-            delay.innerText = "+" + parseInt(secondsDelayed/60) + "m";
-            // delay.innerText = "+" + secondsDelayed;
-        }
-        else if ( secondsDelayed > 0)
-        {
-            delay.classList.add("late-mild");
-            delay.innerText = "+" + parseInt(secondsDelayed/60) + "m";
-            // delay.innerText = "+" + secondsDelayed;
-        }
 
-        
         row.appendChild(destination);
         row.appendChild(route);
         row.appendChild(time);
@@ -154,24 +161,22 @@ Module.register("NextTrains", {
         return row;
     },
 
-    // addSeconds: function name(params) {
-        
-    // },
-
     getDom: function() {
 
         if(this.trains.length == 0)
-            return this.initialMessage()
+            return this.initialMessage();
 
         const wrapper = document.createElement("table");
-        const header_row = this.createTableHeader()
-        wrapper.appendChild(header_row)
+        const header_row = this.createTableHeader();
+        wrapper.appendChild(header_row);
 
-        let row = null
+        let row = null;
         this.trains.forEach(t => {
 
+            // Compress this all into some sort of class
+
             let departureDTPlanned = this.createDateTimeFromTime(t.departure_time);
-            let minsUntilTrain = this.getMinutesDiff(departureDTPlanned, new Date());
+            let minsUntilTrain = this.getDifferenceInMinutes(departureDTPlanned, new Date());
             
             let secondsModifier = this.findLateSeconds(t);
             let departureTimeActual = departureDTPlanned;
@@ -182,13 +187,14 @@ Module.register("NextTrains", {
 
             let platform = t["stop_name:1"].split(' ').pop();
             let departureDisplay = "";
+
             if(this.config.debug)
                 departureDisplay =  (minsUntilTrain + parseInt(secondsModifier/60))+"m" + " - " + t.departure_time + " (" + departureTimeActualLocal + ")";
             else if(this.config.etd)
                 departureDisplay = departureTimeActualLocal;
             else
                 departureDisplay = (minsUntilTrain + parseInt(secondsModifier/60))+"m";
-                
+
             row = this.createTrainRow( platform, t.trip_headsign, departureDisplay, secondsModifier, delayType);
 
             wrapper.appendChild(row)
@@ -210,6 +216,7 @@ Module.register("NextTrains", {
     },
 
     findLateSeconds: function(train) {
+        // This function could most certainly be sped up with a hashtable
 
         if (!this.realTimeUpdates) {
             return 0;
@@ -231,7 +238,6 @@ Module.register("NextTrains", {
                 }
             }
         }
-
 
         return 0;
     },
@@ -271,9 +277,6 @@ Module.register("NextTrains", {
             context: this.context//Needs its own context, tbh maybe both context should be local to their function..investigate
         });
     },
-
-
-    
 
     // Define required styles.
     getStyles: function() {
