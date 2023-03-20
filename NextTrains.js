@@ -252,7 +252,7 @@ Module.register("NextTrains", {
 
         if(payload.id != this.context.id)
         {
-            console.log(payload); // Only print payload if we own it
+            // console.log(payload); // Only print payload if we own it
             return;
         }
         

@@ -1,4 +1,3 @@
-// var request = require('request');
 var NodeHelper = require("node_helper");
 const sqlite3 = require('sqlite3').verbose();
 var https = require('https');
@@ -47,12 +46,10 @@ module.exports = NodeHelper.create({
 
 	buildDatabase: function () {
 		const { spawn } = require('child_process');
-		// Define the path of the Bash script you want to run
 		const pathToBashFile = './create_db.sh';
-		// Define the path you want to execute the Bash script from
 		const executePath = './modules/NextTrains/dist/';
-		// Spawn a child process to execute the Bash script from the specified path
 		const childProcess = spawn('bash', [pathToBashFile], { cwd: executePath });
+
 		// Handle the output of the Bash script
 		childProcess.stdout.on('data', (data) => {
 		  console.log(`stdout: ${data}`);
@@ -66,12 +63,6 @@ module.exports = NodeHelper.create({
 		  console.log(`child process exited with code ${code}`);
 		});
 	},
-
-	// decompressGTFS: function () {
-	// 	decompress('./modules/NextTrains/StaticGTFS.zip', './modules/NextTrains/dist').then(files => {
-	// 		console.log('done!');
-	//   });
-	// },
 
 	downloadGTFSData: function () {
 
@@ -132,8 +123,7 @@ module.exports = NodeHelper.create({
 				if(updateAvailable)
 					this.getRealTimeUpdates().then((buffer) => {
 						this.realTimeData = this.GTFSRealTimeMessage.decode(buffer);
-						// console.log(this.realTimeData);
-						// this.processRealTime(this.realTimeData);
+						//this.realTimeData = this.processRealTime(this.realTimeData);
 					}).catch((err) => {
 						console.log(err);
 					});
@@ -142,24 +132,18 @@ module.exports = NodeHelper.create({
 	},
 
 	processRealTime: function(data) {
+		// Stub function that will filter out excessive records from real time data to reduce overhead on the client
 		
-		for (let i = 0; i < data.entity.length; i++) {
+		// for (let i = 0; i < data.entity.length; i++) {
 			
-			let type = data.entity[i].tripUpdate.trip.scheduleRelationship;
-			if(type == 0) // SCHEDULED //0 SCHEDULED, 
-			{
-				// console.log(data.entity[i].tripUpdate.trip  )
-				console.log("\n\n\n");
-				// console.log(JSON.stringify(data.entity[i].tripUpdate)  );
-				// console.log(data.entity[i].tripUpdate.trip.scheduleRelationship);
+		// 	let type = data.entity[i].tripUpdate.trip.scheduleRelationship;
+		// 	if(type == 0) // SCHEDULED //0 SCHEDULED, 
+		// 	{
+		// 	}
+		// 	else if(type == 5){}	
 
-				console.log(JSON.stringify(data.entity[i].tripUpdate));
-				console.log("_________________________________________");
-				console.log(JSON.stringify(data.entity[i].tripUpdate.stopTimeUpdate));
-				console.log(data.entity[i].tripUpdate.stopTimeUpdate.length);
-			}
-			else if(type == 5){}	
-		}
+		// }
+		// return data;
 	},
 
 
@@ -194,18 +178,14 @@ module.exports = NodeHelper.create({
 			this.getTrains(payload.context, this.getDay()).then((trains) => {
 				this.sendSocketNotification("ACTIVITY", {"id": payload.context.id, "trains": trains}  );
 			});
-		else if(notification === "GET_REALTIME") // RealTime is provided on request, otherwise there is no trivial way for client to track which front end owns which RELATIME
-		{
+		else if(notification === "GET_REALTIME")
 			this.sendSocketNotification("REALTIME_DATA", {"id": payload.context.id, "updates": this.realTimeData}  );
-		}
 		
 	},
 
 	getTrains: function(context, day="monday")
 	{
-
 		const customPromise = new Promise((resolve, reject) => {
-
 
 			context.maxTrains = Math.min(context.maxTrains, this.maxTrains);
 			db.serialize(() => {
@@ -290,10 +270,9 @@ module.exports = NodeHelper.create({
 	},
 
 	isRealTimeUpdateAvailable: function() {
-		//TBH this function is unnecessary and does add overhead
-		//Originally thought to leave just in case modified is added to the header
-		//But bffr that will never happen.
-		// This is getting ugly probably remove...
+		// This function had the intention to reduce API requests, unfortunetly the upstream realtime API does not
+		// provide any 'light' way of checking for changes.
+		// To be removed.
 
 		const availabilityPromise = new Promise((resolve, reject) => {
 
@@ -320,8 +299,7 @@ module.exports = NodeHelper.create({
 				path: "/v2/gtfs/realtime/sydneytrains",
 				method: 'GET',
 				headers: {"Authorization": "apikey " + this.apikey}
-			}
-			
+			}		
 
 			buffer = [];
 			const req = https.request(httpsoptions, res => {
