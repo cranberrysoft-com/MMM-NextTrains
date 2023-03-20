@@ -1,0 +1,28 @@
+/* The basic container */
+.bored-content {
+    
+}
+
+/* The basic container */
+.bored-banner {
+  font-weight: 900;
+}
+
+td {
+  padding-right: 20px;
+}
+
+
+.late-mild {
+  /* color:yellow; */
+  color:#FEC600;
+}
+
+.late-critical {
+  /* color:red; */
+  color:#8B0000;
+}
+
+.early-mild {
+  color: teal;
+}
