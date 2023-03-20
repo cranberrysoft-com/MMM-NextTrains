@@ -170,6 +170,7 @@ module.exports = NodeHelper.create({
 		try {
 			const data = fs.readFileSync('./modules/NextTrains/key', 'utf8');
 			key = data;
+			key = key.replace(/[\n\r]/g, '');  //Note: On a Raspberry Pi the API key is appended with a newline
 		 } catch (err) {
 			console.error(err);
 		 }
@@ -321,6 +322,7 @@ module.exports = NodeHelper.create({
 				headers: {"Authorization": "apikey " + this.apikey}
 			}
 			
+
 			buffer = [];
 			const req = https.request(httpsoptions, res => {
 				if (res.statusCode == 200)
