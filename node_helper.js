@@ -134,6 +134,8 @@ module.exports = NodeHelper.create({
 						this.realTimeData = this.GTFSRealTimeMessage.decode(buffer);
 						// console.log(this.realTimeData);
 						// this.processRealTime(this.realTimeData);
+					}).catch((err) => {
+						console.log(err);
 					});
 			});
 		}
