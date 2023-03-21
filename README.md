@@ -6,7 +6,7 @@ A Magic Mirror module to display the Sydney trains via the [NSW Transport API](h
 
 
 ## Examples
-![name-of-you-image](https://github.com/CptMeetKat/NextTrains/blob/main/screenshots/screenshot1.png)
+![name-of-you-image](/screenshots/screenshot1.png)
 
 
 ## Installation
