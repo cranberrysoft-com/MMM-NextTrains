@@ -160,6 +160,22 @@ Module.register("NextTrains", {
         return row;
     },
 
+    generateRealTimeMap() {
+
+        let map = {};
+
+        let arr = this.realTimeUpdates.entity;
+        for (let i in arr)
+        {
+            let tripID = map[arr[i].tripUpdate.trip.tripId];
+            if(map[tripID] == undefined)
+                map[arr[i].tripUpdate.trip.tripId] = i;
+            else
+                console.error("Error: multiple IDs found in realtime data");
+        }
+        return map;
+    },
+
     getDom: function() {
 
         if(this.trains.length == 0)
@@ -170,6 +186,9 @@ Module.register("NextTrains", {
         wrapper.appendChild(header_row);
 
         let row = null;
+        
+        let realTimeMap = this.generateRealTimeMap(this.trains);
+
         this.trains.forEach(t => {
 
             // Compress this all into some sort of class
@@ -177,7 +196,7 @@ Module.register("NextTrains", {
             let departureDTPlanned = this.createDateTimeFromTime(t.departure_time);
             let minsUntilTrain = this.getDifferenceInMinutes(departureDTPlanned, new Date());
             
-            let secondsModifier = this.findLateSeconds(t);
+            let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeMap);
             let departureTimeActual = departureDTPlanned;
             departureTimeActual.setSeconds(departureTimeActual.getSeconds() + secondsModifier);
             
@@ -214,27 +233,25 @@ Module.register("NextTrains", {
         return type;
     },
 
-    findLateSeconds: function(train) {
-        // This function could most certainly be sped up with a hashtable
+    findRealTimeChangesInSeconds: function(train, tripIDMap) {
+        //This function should be reviewed once cancelled is implemented
 
-        if (!this.realTimeUpdates) {
+        let i = tripIDMap[train.trip_id];
+        
+        // IF real time updates have not been obtained OR
+        // IF the train does not have a corrosponding record in the real time updates
+        if (!this.realTimeUpdates || i == undefined) 
             return 0;
-        }
 
         let arr = this.realTimeUpdates.entity;
-        for (let i in arr) {
-                
-            let type = arr[i].tripUpdate.trip.scheduleRelationship;
-            if(type == undefined || type == "SCHEDULED") 
-            {   
-                if(train.trip_id == arr[i].tripUpdate.trip.tripId )    
-                {
-                    for (let j in arr[i].tripUpdate.stopTimeUpdate) 
-                    {
-                        if(arr[i].tripUpdate.stopTimeUpdate[j].stopId == train.stop_id)
-                            return arr[i].tripUpdate.stopTimeUpdate[j].departure.delay;
-                    }
-                }
+
+        let type = arr[i].tripUpdate.trip.scheduleRelationship;
+        if(type == undefined || type == "SCHEDULED") 
+        {   
+            for (let j in arr[i].tripUpdate.stopTimeUpdate) 
+            {
+                if(arr[i].tripUpdate.stopTimeUpdate[j].stopId == train.stop_id)
+                    return arr[i].tripUpdate.stopTimeUpdate[j].departure.delay;
             }
         }
 
