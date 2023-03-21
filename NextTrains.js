@@ -18,6 +18,7 @@ Module.register("NextTrains", {
         maxTrains: 4,
         lateCriticalLimit: 600,
         etd: false,
+        delaysFormat: "m", //"m, s, m:s"
         debug: false
     },
 
@@ -105,8 +106,6 @@ Module.register("NextTrains", {
         let cssClass = "";
         if(type == -1)
             cssClass = "early-mild"
-        else if(type == 0)
-            cssClass = "";
         else if(type == 1)
             cssClass = "late-mild";
         else if(type == 2)
@@ -119,18 +118,18 @@ Module.register("NextTrains", {
     {
         let delay = document.createElement('td');
 
-        if(secondsDelayed >= this.config.lateCriticalLimit)
-        {
-            delay.classList.add("late-critical"); //CHECK IF THIS I NEEDED
-            delay.innerText = "+" + parseInt(secondsDelayed/60) + "m";
-            // delay.innerText = "+" + secondsDelayed;
-        }
-        else if ( secondsDelayed > 0)
-        {
-            delay.classList.add("late-mild"); //CHECK IF THIS I NEEDED
-            delay.innerText = "+" + parseInt(secondsDelayed/60) + "m";
-            // delay.innerText = "+" + secondsDelayed;
-        }
+        let mins = parseInt(secondsDelayed/60);
+        let isMinsNotZero = mins != 0;
+        let isSecsNotZero = secondsDelayed != 0;
+
+        if ( this.config.debug && isSecsNotZero) // +m:s (+s)
+            delay.innerText = "+" + mins + ":" + (secondsDelayed%60) + " (+" + secondsDelayed + "s)";
+        else if( this.config.delaysFormat == "m:s" && isSecsNotZero) //+m:s
+            delay.innerText = "+" + mins + ":" + (secondsDelayed%60);
+        else if( this.config.delaysFormat == "m" && isMinsNotZero)  //+min
+            delay.innerText = "+" + mins + "m";
+        else if ( this.config.delaysFormat == "s" && isSecsNotZero) // +s
+            delay.innerText = "+" + secondsDelayed + "s";
 
         return delay;
     },
@@ -142,7 +141,7 @@ Module.register("NextTrains", {
 
         let classA = this.getDelayClass(this.getDelayType(secondsDelayed));
         if(classA != "")
-            row.classList.add(   classA   ); //CHECK IF THIS I NEEDED against getDelayFormat()
+            row.classList.add(   classA   );
         
         let destination = document.createElement('td');
         let route = document.createElement('td');
