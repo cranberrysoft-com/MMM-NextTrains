@@ -5,29 +5,25 @@ const fs = require('fs');
 var protobuf = require("protobufjs");
 const decompress = require('decompress');
 
-let db = new sqlite3.Database('./modules/NextTrains/trains.db', sqlite3.OPEN_READWRITE, (err) => {
-    if (err)
-      console.error(err.message);
-	 else
-    	console.log('Connected to the NextTrain database.');
-  });
+let db = null;
 
 module.exports = NodeHelper.create({
 	config: {
-		checkForGTFSUpdates: false,
+		checkForGTFSUpdates: true,
 		checkForRealTimeUpdates: true
+
 		//config to set GTFS static interval
 		//config to real time interval
 	},
 
 	maxTrains: 50,
 	apikey: "",
+	dbPath: "./modules/NextTrains/dist/trains.db",
 	GTFSLastModified: null,
 	realTimeLastModified: null, //Perhaps down the road these can't stay, if I wanted to enable the plugin for different regions
 
 	GTFSRealTimeMessage: null,
 	realTimeData: {},
-
 	
 	start: function() {
 		console.log("Starting node helper: " + this.name);
@@ -45,23 +41,33 @@ module.exports = NodeHelper.create({
 	},
 
 	buildDatabase: function () {
-		const { spawn } = require('child_process');
-		const pathToBashFile = './create_db.sh';
-		const executePath = './modules/NextTrains/dist/';
-		const childProcess = spawn('bash', [pathToBashFile], { cwd: executePath });
 
-		// Handle the output of the Bash script
-		childProcess.stdout.on('data', (data) => {
-		  console.log(`stdout: ${data}`);
-		});
-		// Handle any errors that occur while running the Bash script
-		childProcess.on('error', (error) => {
-		  console.error(`error: ${error}`);
-		});
-		// Handle the end of the Bash script
-		childProcess.on('close', (code) => {
-		  console.log(`child process exited with code ${code}`);
-		});
+		const customPromise = new Promise((resolve, reject) => {
+
+			const { spawn } = require('child_process');
+			const pathToBashFile = './create_db.sh';
+			const executePath = './modules/NextTrains/dist/';
+			const childProcess = spawn('bash', [pathToBashFile], { cwd: executePath });
+
+			// Handle the output of the Bash script
+			childProcess.stdout.on('data', (data) => {
+				console.log(`stdout: ${data}`);
+			});
+			// Handle any errors that occur while running the Bash script
+			childProcess.on('error', (error) => {
+				console.error(`error: ${error}`);
+				reject();
+			});
+			// Handle the end of the Bash script
+			childProcess.on('close', (code) => {
+				console.log(`child process exited with code ${code}`);
+				resolve();
+			});
+
+		})
+
+		return customPromise;
+
 	},
 
 	downloadGTFSData: function () {
@@ -81,6 +87,10 @@ module.exports = NodeHelper.create({
 				{
 					const path = `./modules/NextTrains/StaticGTFS.zip`; 
 					const filePath = fs.createWriteStream(path);
+
+
+					this.GTFSLastModified = new Date(res.headers["last-modified"]);
+
 					res.pipe(filePath);
 					filePath.on('finish',() => {
 						 filePath.close();
@@ -96,25 +106,58 @@ module.exports = NodeHelper.create({
 		return customPromise;
 	},
 
+	openDatabase(path)
+	{
+		// this.buildDatabase().then(() => {
+						
+			db = new sqlite3.Database(path, sqlite3.OPEN_READWRITE, (err) => {
+				if (err)
+					console.error(err.message);
+				else
+					console.log('Connected to the NextTrain database.');
+			});
+		// });
 
-	updateGTFSData: function () {
+	},
 
-		console.log("(STUB) Updating static GTFS database...");
+
+	updateGTFSData: function ()
+	{
 		this.downloadGTFSData().then(() => {
 			decompress('./modules/NextTrains/StaticGTFS.zip', './modules/NextTrains/dist').then(() => {
-				this.buildDatabase();
+
+				if(db != null)
+				{
+					db.close(() => {
+						this.buildDatabase().then(() => {
+							this.openDatabase(this.dbPath);
+						});
+					});
+				}
+				else
+				{	
+					this.buildDatabase().then(() => {
+						this.openDatabase(this.dbPath);
+					});
+				}
+
+				
 			})
 		});	
 	},
 
 	checkForUpdates: function()
 	{
-		if(this.config.checkForGTFSUpdates)
+		if(this.config.checkForGTFSUpdates) //Download fresh GTFS database
 		{
 			this.isStaticGTFSUpdateAvailable().then(updateAvailable => {
 				if(updateAvailable)
 					this.updateGTFSData();
 			});
+		}
+		else if(db == null) // Use already existing database (for development purposes)
+		{
+			this.openDatabase(this.dbPath);
 		}
 
 		if(this.config.checkForRealTimeUpdates)
@@ -177,6 +220,8 @@ module.exports = NodeHelper.create({
 		if(notification === "GET_TRAINS") 
 			this.getTrains(payload.context, this.getDay()).then((trains) => {
 				this.sendSocketNotification("ACTIVITY", {"id": payload.context.id, "trains": trains}  );
+			}).catch(() => {
+				console.log("ERR: failed to query database");
 			});
 		else if(notification === "GET_REALTIME")
 			this.sendSocketNotification("REALTIME_DATA", {"id": payload.context.id, "updates": this.realTimeData}  );
@@ -185,7 +230,12 @@ module.exports = NodeHelper.create({
 
 	getTrains: function(context, day="monday")
 	{
+		//ADD Database safety here
 		const customPromise = new Promise((resolve, reject) => {
+
+
+			if(db == null)
+				reject();
 
 			context.maxTrains = Math.min(context.maxTrains, this.maxTrains);
 			db.serialize(() => {
@@ -242,6 +292,8 @@ module.exports = NodeHelper.create({
 		
 		const customPromise = new Promise((resolve, reject) => {
 
+
+
 			const httpsoptions = {
 				protocol: "https:",
 				hostname: "api.transport.nsw.gov.au",
@@ -257,12 +309,20 @@ module.exports = NodeHelper.create({
 
 					if(!this.GTFSLastModified || GTFSLastModified > this.GTFSLastModified)  // If last modified is unpopulated, update is available
 					{																					 // OR previous modification is before whats available
-						this.GTFSLastModified = GTFSLastModified; //PROBABLY SHOULD NOT SET THIS HERE, could cause super minor edge case if its updated between now and when pulled
+						console.log("GTFS: New static GTFS data found");
 						resolve(true)
+					}
+					else
+					{
+						console.log("GTFS: Current static GTFS is the most updated")
+						resolve(false);
 					}
 				}
 				else
+				{
+					console.log("GTFS: Cannot reach Transport API for static GTFS data")
 					resolve(false);
+				}
 			});
 			req.end();
 		})
