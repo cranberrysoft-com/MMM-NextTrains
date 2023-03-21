@@ -11,6 +11,7 @@ module.exports = NodeHelper.create({
 	config: {
 		checkForGTFSUpdates: true,
 		checkForRealTimeUpdates: true
+
 		//config to set GTFS static interval
 		//config to real time interval
 	},
@@ -103,7 +104,7 @@ module.exports = NodeHelper.create({
 
 	openDatabase(path)
 	{
-		this.buildDatabase().then(() => {
+		// this.buildDatabase().then(() => {
 						
 			db = new sqlite3.Database(path, sqlite3.OPEN_READWRITE, (err) => {
 				if (err)
@@ -111,7 +112,7 @@ module.exports = NodeHelper.create({
 				else
 					console.log('Connected to the NextTrain database.');
 			});
-		});
+		// });
 
 	},
 
@@ -124,12 +125,16 @@ module.exports = NodeHelper.create({
 				if(db != null)
 				{
 					db.close(() => {
-						this.openDatabase(this.dbPath);
+						this.buildDatabase().then(() => {
+							this.openDatabase(this.dbPath);
+						});
 					});
 				}
 				else
-				{
-					this.openDatabase(this.dbPath);
+				{	
+					this.buildDatabase().then(() => {
+						this.openDatabase(this.dbPath);
+					});
 				}
 
 				
