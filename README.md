@@ -22,15 +22,15 @@ A Magic Mirror module to display the Sydney trains via the [NSW Transport API](h
   
  **Example Configuration:**
 ```
-		{
-			module: 'NextTrains',
-			position: 'bottom_right',
-			config: {
-				updateInterval: "10",
-				station: "Central Station",
-				maxTrains: 10
-			}
+{
+	module: 'NextTrains',
+	position: 'bottom_right',
+	config: {
+			updateInterval: "10",
+			station: "Central Station",
+			maxTrains: 10
 		}
+}
 ```
 
 ## Config
