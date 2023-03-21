@@ -139,14 +139,20 @@ Module.register("NextTrains", {
         let row = document.createElement('tr');
         row.className = "align-left small normal";
 
-        let classA = this.getDelayClass(this.getDelayType(secondsDelayed));
-        if(classA != "")
-            row.classList.add(   classA   );
         
         let destination = document.createElement('td');
         let route = document.createElement('td');
         let time = document.createElement('td');
         let delay = this.getDelayFormat(secondsDelayed);
+
+
+        if(delay.innerText != "")
+        {
+            let classA = this.getDelayClass(this.getDelayType(secondsDelayed));
+            if(classA != "")
+                row.classList.add(   classA   );
+        }
+
 
         destination.innerText = destination_name;
         route.innerText = route_name;
