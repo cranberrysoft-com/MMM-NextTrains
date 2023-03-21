@@ -87,6 +87,10 @@ module.exports = NodeHelper.create({
 				{
 					const path = `./modules/NextTrains/StaticGTFS.zip`; 
 					const filePath = fs.createWriteStream(path);
+
+
+					this.GTFSLastModified = new Date(res.headers["last-modified"]);
+
 					res.pipe(filePath);
 					filePath.on('finish',() => {
 						 filePath.close();
@@ -288,7 +292,7 @@ module.exports = NodeHelper.create({
 		
 		const customPromise = new Promise((resolve, reject) => {
 
-			console.log("CHECKING FOR UPDATES");
+
 
 			const httpsoptions = {
 				protocol: "https:",
@@ -305,12 +309,20 @@ module.exports = NodeHelper.create({
 
 					if(!this.GTFSLastModified || GTFSLastModified > this.GTFSLastModified)  // If last modified is unpopulated, update is available
 					{																					 // OR previous modification is before whats available
-						this.GTFSLastModified = GTFSLastModified; //PROBABLY SHOULD NOT SET THIS HERE, could cause super minor edge case if its updated between now and when pulled
+						console.log("GTFS: New static GTFS data found");
 						resolve(true)
+					}
+					else
+					{
+						console.log("GTFS: Current static GTFS is the most updated")
+						resolve(false);
 					}
 				}
 				else
+				{
+					console.log("GTFS: Cannot reach Transport API for static GTFS data")
 					resolve(false);
+				}
 			});
 			req.end();
 		})
