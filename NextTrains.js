@@ -29,7 +29,7 @@ Module.register("NextTrains", {
         departedAfter: "" //HH:MM:SS
     },
 
-    start: function() {
+    start() {
         this.config.updateInterval = this.config.updateInterval * 1000
         this.context.id = this.identifier;
         this.context.station = this.config.station;
@@ -44,7 +44,7 @@ Module.register("NextTrains", {
 
     },
 
-    initialMessage: function() {
+    initialMessage() {
         let x = document.createElement("div");
         if(!this.welcomed)
         {
@@ -57,14 +57,14 @@ Module.register("NextTrains", {
     },
 
 
-    createDateTimeFromTime: function(time) {
+    createDateTimeFromTime(time) {
         let d = new Date()
         var datestring = d.getFullYear()  + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
 
         return new Date(datestring + "T" + time)
     },
 
-    getDifferenceInMinutes: function(d1, d2)
+    getDifferenceInMinutes(d1, d2)
     {
         var diffMs = (d1 - d2); // milliseconds between d1 & d2
         // var diffDays = Math.floor(diffMs / 86400000); // days
@@ -74,11 +74,11 @@ Module.register("NextTrains", {
         return diffMins;
     }, 
 
-    getHeader: function() {
+    getHeader() {
         return this.name + ": " + this.config.station;
     },
 
-    createTableHeader: function() {
+    createTableHeader() {
         let header_row = document.createElement('tr')
         header_row.className = "align-left regular xsmall dimmed"
         
@@ -101,7 +101,7 @@ Module.register("NextTrains", {
         return header_row
     },
 
-    getDelayClass: function(type)
+    getDelayClass(type)
     {
         let cssClass = "";
         if(type == -1)
@@ -114,7 +114,7 @@ Module.register("NextTrains", {
         return cssClass;
     },
 
-    getDelayFormat: function(secondsDelayed)
+    getDelayFormat(secondsDelayed)
     {
         let delay = document.createElement('td');
 
@@ -135,7 +135,7 @@ Module.register("NextTrains", {
     },
 
 
-    createTrainRow: function(destination_name, route_name, departure, secondsDelayed=0, type=0) {
+    createTrainRow(destination_name, route_name, departure, secondsDelayed=0, type=0) {
         let row = document.createElement('tr');
         row.className = "align-left small normal";
 
@@ -182,7 +182,7 @@ Module.register("NextTrains", {
         return map;
     },
 
-    getDom: function() {
+    getDom() {
 
         if(this.trains.length == 0)
             return this.initialMessage();
@@ -227,7 +227,7 @@ Module.register("NextTrains", {
         return wrapper;
     },
 
-    getDelayType: function(secondsLate) {
+    getDelayType(secondsLate) {
         let type = 0;
         if(secondsLate >= this.config.lateCriticalLimit)
             type = 2;
@@ -239,7 +239,7 @@ Module.register("NextTrains", {
         return type;
     },
 
-    findRealTimeChangesInSeconds: function(train, tripIDMap) {
+    findRealTimeChangesInSeconds(train, tripIDMap) {
         //This function should be reviewed once cancelled is implemented
 
         let i = tripIDMap[train.trip_id];
@@ -265,7 +265,7 @@ Module.register("NextTrains", {
     },
 
 
-   socketNotificationReceived: function(notification, payload) {
+   socketNotificationReceived(notification, payload) {
 
         if(payload.id != this.context.id)
         {
@@ -281,7 +281,7 @@ Module.register("NextTrains", {
         this.updateDom(1000);
     },
 
-    getTrains: function() {
+    getTrains() {
         Log.info(this.name + ": Getting trains");
         
         let now = new Date(); 
@@ -292,7 +292,7 @@ Module.register("NextTrains", {
         });
     },
 
-    getRealTimeUpdates: function() {
+    getRealTimeUpdates() {
         Log.info(this.name + ": Getting real time updates");
 
         this.sendSocketNotification("GET_REALTIME", {
@@ -301,7 +301,7 @@ Module.register("NextTrains", {
     },
 
     // Define required styles.
-    getStyles: function() {
+    getStyles() {
         return ["nextTrains.css"];
     }
 
