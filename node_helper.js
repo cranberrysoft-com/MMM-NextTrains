@@ -9,11 +9,11 @@ let db = null;
 
 module.exports = NodeHelper.create({
 	config: {
-		checkForGTFSUpdates: true,
-		checkForRealTimeUpdates: true
+		checkForGTFSUpdates: false,
+		checkForRealTimeUpdates: true,
 
-		//config to set GTFS static interval
-		//config to real time interval
+		GTFSStaticUpdateInterval: 0, //TBC
+		realTimeUpdateInterval: 0 //TBC
 	},
 
 	maxTrains: 50,
@@ -25,7 +25,7 @@ module.exports = NodeHelper.create({
 	GTFSRealTimeMessage: null,
 	realTimeData: {},
 	
-	start: function() {
+	start() {
 		console.log("Starting node helper: " + this.name);
 		this.apikey = this.getApiKey();
 		
@@ -40,7 +40,7 @@ module.exports = NodeHelper.create({
 		}, 5000);
 	},
 
-	buildDatabase: function () {
+	buildDatabase() {
 
 		const customPromise = new Promise((resolve, reject) => {
 
@@ -70,7 +70,7 @@ module.exports = NodeHelper.create({
 
 	},
 
-	downloadGTFSData: function () {
+	downloadGTFSData() {
 
 		const customPromise = new Promise((resolve, reject) => {
 
@@ -121,7 +121,7 @@ module.exports = NodeHelper.create({
 	},
 
 
-	updateGTFSData: function ()
+	updateGTFSData()
 	{
 		this.downloadGTFSData().then(() => {
 			decompress('./modules/NextTrains/StaticGTFS.zip', './modules/NextTrains/dist').then(() => {
@@ -146,7 +146,7 @@ module.exports = NodeHelper.create({
 		});	
 	},
 
-	checkForUpdates: function()
+	checkForUpdates()
 	{
 		if(this.config.checkForGTFSUpdates) //Download fresh GTFS database
 		{
@@ -174,7 +174,7 @@ module.exports = NodeHelper.create({
 		}
 	},
 
-	processRealTime: function(data) {
+	processRealTime(data) {
 		// Stub function that will filter out excessive records from real time data to reduce overhead on the client
 		
 		// for (let i = 0; i < data.entity.length; i++) {
@@ -191,7 +191,7 @@ module.exports = NodeHelper.create({
 
 
 
-	getApiKey: function()
+	getApiKey()
 	{
 		let key = "";
 		try {
@@ -205,7 +205,7 @@ module.exports = NodeHelper.create({
 		 return key;
 	},
 
-	getDay: function() {
+	getDay() {
 		var date = new Date();
 		let s = date.toLocaleString('en-US', {
 				weekday: 'long'
@@ -213,7 +213,7 @@ module.exports = NodeHelper.create({
 		return s.toLowerCase();
 	},
 	
-	socketNotificationReceived: function(notification, payload) {
+	socketNotificationReceived(notification, payload) {
 
 		console.log("Notification: " + notification + " Payload: " + JSON.stringify(payload));
 		
@@ -228,7 +228,7 @@ module.exports = NodeHelper.create({
 		
 	},
 
-	getTrains: function(context, day="monday")
+	getTrains(context, day="monday")
 	{
 		//ADD Database safety here
 		const customPromise = new Promise((resolve, reject) => {
@@ -287,13 +287,10 @@ module.exports = NodeHelper.create({
 
 	},
 
-	isStaticGTFSUpdateAvailable: function()
+	isStaticGTFSUpdateAvailable()
 	{		
 		
 		const customPromise = new Promise((resolve, reject) => {
-
-
-
 			const httpsoptions = {
 				protocol: "https:",
 				hostname: "api.transport.nsw.gov.au",
@@ -329,7 +326,7 @@ module.exports = NodeHelper.create({
 		return customPromise;
 	},
 
-	isRealTimeUpdateAvailable: function() {
+	isRealTimeUpdateAvailable() {
 		// This function had the intention to reduce API requests, unfortunetly the upstream realtime API does not
 		// provide any 'light' way of checking for changes.
 		// To be removed.
@@ -349,7 +346,7 @@ module.exports = NodeHelper.create({
 
 	},
 
-	getRealTimeUpdates: function()
+	getRealTimeUpdates()
 	{		
 		const customPromise = new Promise((resolve, reject) => {
 
