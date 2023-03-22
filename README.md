@@ -1,4 +1,4 @@
-# NextTrains
+# MMM-NextTrains
 A MagicMirror module that displays the Sydney trains using GTFS transport data from the [NSW Transport API](https://opendata.transport.nsw.gov.au/).
 
 
