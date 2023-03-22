@@ -9,7 +9,7 @@ let db = null;
 
 module.exports = NodeHelper.create({
 	config: {
-		checkForGTFSUpdates: false,
+		checkForGTFSUpdates: true,
 		checkForRealTimeUpdates: true,
 
 		GTFSStaticUpdateInterval: 0, //TBC
