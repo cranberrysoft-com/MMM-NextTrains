@@ -1,5 +1,5 @@
 /* Magic Mirror
- * Module: BoredDaily
+ * Module: NextTrains
  *
  * By CptMeetKat
  * MIT Licensed.
