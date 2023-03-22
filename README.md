@@ -23,6 +23,9 @@ A MagicMirror module that displays the Sydney trains using GTFS transport data f
   8. Create a file named 'key' with the apikey inside in the NextTrains directory (No new line character)
   9. Insert the module configurations into the MagicMirror config file
   
+### Windows
+- No Windows version available yet
+  
  **Example Configuration:**
 ```
 {
@@ -42,3 +45,7 @@ A MagicMirror module that displays the Sydney trains using GTFS transport data f
 | `station` | The name of the Sydney train station to monitor |
 | `updateInterval` | How often the widget should refresh it's data (in seconds), default is `10`. |
 | `maxTrains` | The maximum number of trains to display at a time, default is `10` |
+
+---
+
+<a href="https://www.buymeacoffee.com/CptMeetKat" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
