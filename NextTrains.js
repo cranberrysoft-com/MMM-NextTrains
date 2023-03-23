@@ -262,11 +262,14 @@ Module.register("NextTrains", {
         if(payload.id != this.identifier)
             return;
         
+        console.log(payload);
         if (notification === "ACTIVITY")
             this.trains = payload.trains;
         else if(notification === "REALTIME_DATA")
+        {
             this.realTimeUpdates = payload.updates;
             this.realTimeTimeStamp = payload.timestamp;
+        }
         
         this.updateDom(1000);
     },
