@@ -11,21 +11,23 @@ module.exports = NodeHelper.create({
 	config: {
 		GTFSUpdatesEnabled: true,
 		realTimeUpdatesEnabled: true,
+		staticTimetable:
+		{
+			hostname: "",
+			path: "",
+			interval: 10 //seconds
+		},
+		realTimeUpdates:
+		{
+			hostname: "",
+			path: "",
+			interval: 10 //seconds
+		},
+	
 	},
 
-   staticTimetable:
-   {
-      hostname: "",
-      path: "",
-		interval: 10 //seconds
-   },
 
-	realTimeUpdates:
-   {
-      hostname: "",
-      path: "",
-		interval: 10 //seconds
-   },
+
 
 	dbPath: "./modules/NextTrains/dist/trains.db",
 	protoFilePath: "./modules/NextTrains/gtfs-realtime.proto",
@@ -55,16 +57,13 @@ module.exports = NodeHelper.create({
 		this.checkForGTFSUpdates();
 		this.checkForRealTimeUpdates();
 
-		console.log(this.staticTimetable.interval)
-		console.log(this.realTimeUpdates.interval)
-
 		setInterval(() => {
 			this.checkForGTFSUpdates();
-		}, this.staticTimetable.interval * 1000);
+		}, this.config.staticTimetable.interval * 1000);
 
 		setInterval(() => {
 			this.checkForRealTimeUpdates();
-		}, this.realTimeUpdates.interval * 1000);
+		}, this.config.realTimeUpdates.interval * 1000);
 	},
 
 	readServerConfig() {
@@ -72,13 +71,13 @@ module.exports = NodeHelper.create({
 			const data = fs.readFileSync(this.serverConfigPath, 'utf8');
 			let config = JSON.parse(data);
 
-			this.staticTimetable.hostname = config.staticTimetable.hostname;
-			this.staticTimetable.path = config.staticTimetable.path;
-			this.staticTimetable.interval = config.staticTimetable.interval;
+			this.config.staticTimetable.hostname = config.staticTimetable.hostname;
+			this.config.staticTimetable.path = config.staticTimetable.path;
+			this.config.staticTimetable.interval = config.staticTimetable.interval;
 
-			this.realTimeUpdates.hostname = config.realTimeUpdates.hostname;
-			this.realTimeUpdates.path = config.realTimeUpdates.path;
-			this.realTimeUpdates.interval = config.realTimeUpdates.interval;
+			this.config.realTimeUpdates.hostname = config.realTimeUpdates.hostname;
+			this.config.realTimeUpdates.path = config.realTimeUpdates.path;
+			this.config.realTimeUpdates.interval = config.realTimeUpdates.interval;
 
 		 } catch (err) {
 			console.error(err);
@@ -343,8 +342,8 @@ module.exports = NodeHelper.create({
 		const customPromise = new Promise((resolve, reject) => {
 			const httpsoptions = {
 				protocol: "https:",
-				hostname: this.staticTimetable.hostname,
-				path: this.staticTimetable.path,
+				hostname: this.config.staticTimetable.hostname,
+				path: this.config.staticTimetable.path,
 
 				method: 'HEAD',
 				headers: {"Authorization": "apikey " + this.apikey}
@@ -403,8 +402,8 @@ module.exports = NodeHelper.create({
 
 			const httpsoptions = {
 				protocol: "https:",
-				hostname: this.realTimeUpdates.hostname,
-				path: this.realTimeUpdates.path,
+				hostname: this.config.realTimeUpdates.hostname,
+				path: this.config.realTimeUpdates.path,
 				method: 'GET',
 				headers: {"Authorization": "apikey " + this.apikey}
 			}		
