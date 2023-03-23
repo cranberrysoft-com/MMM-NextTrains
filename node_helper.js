@@ -4,6 +4,7 @@ var https = require('https');
 const fs = require('fs');
 var protobuf = require("protobufjs");
 const decompress = require('decompress');
+const path = require("path");
 
 let db = null;
 
@@ -16,9 +17,26 @@ module.exports = NodeHelper.create({
 		realTimeUpdateInterval: 0 //TBC
 	},
 
+   staticTimetable:
+   {
+      hostname: "",
+      path: ""
+   },
+
+	realTimeUpdates:
+   {
+      hostname: "",
+      path: ""
+   },
+
+	dbPath: "./modules/NextTrains/dist/trains.db",
+	protoFilePath: "./modules/NextTrains/gtfs-realtime.proto",
+	serverConfigPath: "./modules/NextTrains/server.conf",
+	apikeyPath: "./modules/NextTrains/key",
+
+
 	maxTrains: 50,
 	apikey: "",
-	dbPath: "./modules/NextTrains/dist/trains.db",
 	GTFSLastModified: null,
 	realTimeLastModified: null, //Perhaps down the road these can't stay, if I wanted to enable the plugin for different regions
 
@@ -26,11 +44,14 @@ module.exports = NodeHelper.create({
 	realTimeData: {},
 	
 	start() {
+
+		this.readServerConfig();
+
 		console.log("Starting node helper: " + this.name);
 		this.apikey = this.getApiKey();
 		
 		//Protobuffer setup for realtime updates
-		let root = protobuf.loadSync("./modules/NextTrains/gtfs-realtime.proto");
+		let root = protobuf.loadSync(this.protoFilePath);
 		this.GTFSRealTimeMessage = root.lookupType("transit_realtime.FeedMessage");
 
 		this.checkForUpdates()
@@ -38,6 +59,29 @@ module.exports = NodeHelper.create({
 		setInterval(() => {
 			this.checkForUpdates();
 		}, 5000);
+	},
+
+	readServerConfig() {
+
+		
+		try {
+			const data = fs.readFileSync(this.serverConfigPath, 'utf8');
+			// console.log(typeof data);
+			// console.log(data.toString());
+			let config = JSON.parse(data);
+
+			// console.log(config.toString());
+			// console.log(config.staticTimetable.hostname);
+
+			this.staticTimetable.hostname = config.staticTimetable.hostname;
+			this.staticTimetable.path = config.staticTimetable.path;
+
+			this.realTimeUpdates.hostname = config.realTimeUpdates.hostname;
+			this.realTimeUpdates.path = config.realTimeUpdates.path;
+
+		 } catch (err) {
+			console.error(err);
+		 }
 	},
 
 	buildDatabase() {
@@ -195,7 +239,7 @@ module.exports = NodeHelper.create({
 	{
 		let key = "";
 		try {
-			const data = fs.readFileSync('./modules/NextTrains/key', 'utf8');
+			const data = fs.readFileSync(this.apikeyPath, 'utf8');
 			key = data;
 			key = key.replace(/[\n\r]/g, '');  //Note: On a Raspberry Pi the API key is appended with a newline
 		 } catch (err) {
@@ -293,8 +337,9 @@ module.exports = NodeHelper.create({
 		const customPromise = new Promise((resolve, reject) => {
 			const httpsoptions = {
 				protocol: "https:",
-				hostname: "api.transport.nsw.gov.au",
-				path: "/v1/gtfs/schedule/sydneytrains",
+				hostname: this.staticTimetable.hostname,
+				path: this.staticTimetable.path,
+
 				method: 'HEAD',
 				headers: {"Authorization": "apikey " + this.apikey}
 			}
@@ -352,8 +397,8 @@ module.exports = NodeHelper.create({
 
 			const httpsoptions = {
 				protocol: "https:",
-				hostname: "api.transport.nsw.gov.au",
-				path: "/v2/gtfs/realtime/sydneytrains",
+				hostname: this.realTimeUpdates.hostname,
+				path: this.realTimeUpdates.path,
 				method: 'GET',
 				headers: {"Authorization": "apikey " + this.apikey}
 			}		
