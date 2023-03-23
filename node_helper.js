@@ -26,19 +26,20 @@ module.exports = NodeHelper.create({
 	
 	},
 
-
+	//Move all into config eventually
 	dbPath: "./modules/NextTrains/dist/trains.db",
 	protoFilePath: "./modules/NextTrains/gtfs-realtime.proto",
 	serverConfigPath: "./modules/NextTrains/server.conf",
 	apikeyPath: "./modules/NextTrains/key",
-
-
 	maxTrains: 50,
 	apikey: "",
+
+
+	GTFSRealTimeMessage: null, //Protobuffer root node
+
 	GTFSLastModified: null,
 	realTimeLastModified: null, //Perhaps down the road these can't stay, if I wanted to enable the plugin for different regions
 
-	GTFSRealTimeMessage: null,
 	realTimeData: {},
 	
 	start() {
@@ -219,6 +220,8 @@ module.exports = NodeHelper.create({
 				if(updateAvailable)
 					this.getRealTimeUpdates().then((buffer) => {
 						this.realTimeData = this.GTFSRealTimeMessage.decode(buffer);
+						
+						this.realTimeLastModified = Number.parseInt(this.realTimeData.header.timestamp);
 						//this.realTimeData = this.processRealTime(this.realTimeData);
 					}).catch((err) => {
 						console.log(err);
@@ -278,7 +281,9 @@ module.exports = NodeHelper.create({
 				console.log("ERR: failed to query database");
 			});
 		else if(notification === "GET_REALTIME")
-			this.sendSocketNotification("REALTIME_DATA", {"id": payload.context.id, "updates": this.realTimeData}  );
+		{
+			this.sendSocketNotification("REALTIME_DATA", {"id": payload.context.id, timestamp: this.realTimeLastModified, "updates": this.realTimeData}  );
+		}
 		
 	},
 

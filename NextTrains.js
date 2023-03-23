@@ -9,6 +9,7 @@ Module.register("NextTrains", {
     
     trains: [],
     realTimeUpdates: null,
+    realTimeTimeStamp: 0,
     welcomeMessage: "Welcome to NextTrains!",
     welcomed: false,
     // Default module config.
@@ -23,6 +24,7 @@ Module.register("NextTrains", {
     },
 
     start() {
+
         this.config.updateInterval = this.config.updateInterval * 1000
 
         this.getRealTimeUpdates();
@@ -264,7 +266,8 @@ Module.register("NextTrains", {
             this.trains = payload.trains;
         else if(notification === "REALTIME_DATA")
             this.realTimeUpdates = payload.updates;
-
+            this.realTimeTimeStamp = payload.timestamp;
+        
         this.updateDom(1000);
     },
 
