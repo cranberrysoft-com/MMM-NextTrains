@@ -4,29 +4,27 @@ var https = require('https');
 const fs = require('fs');
 var protobuf = require("protobufjs");
 const decompress = require('decompress');
-const path = require("path");
 
 let db = null;
 
 module.exports = NodeHelper.create({
 	config: {
-		checkForGTFSUpdates: true,
-		checkForRealTimeUpdates: true,
-
-		GTFSStaticUpdateInterval: 0, //TBC
-		realTimeUpdateInterval: 0 //TBC
+		GTFSUpdatesEnabled: true,
+		realTimeUpdatesEnabled: true,
 	},
 
    staticTimetable:
    {
       hostname: "",
-      path: ""
+      path: "",
+		interval: 10 //seconds
    },
 
 	realTimeUpdates:
    {
       hostname: "",
-      path: ""
+      path: "",
+		interval: 10 //seconds
    },
 
 	dbPath: "./modules/NextTrains/dist/trains.db",
@@ -54,30 +52,33 @@ module.exports = NodeHelper.create({
 		let root = protobuf.loadSync(this.protoFilePath);
 		this.GTFSRealTimeMessage = root.lookupType("transit_realtime.FeedMessage");
 
-		this.checkForUpdates()
+		this.checkForGTFSUpdates();
+		this.checkForRealTimeUpdates();
+
+		console.log(this.staticTimetable.interval)
+		console.log(this.realTimeUpdates.interval)
 
 		setInterval(() => {
-			this.checkForUpdates();
-		}, 5000);
+			this.checkForGTFSUpdates();
+		}, this.staticTimetable.interval * 1000);
+
+		setInterval(() => {
+			this.checkForRealTimeUpdates();
+		}, this.realTimeUpdates.interval * 1000);
 	},
 
 	readServerConfig() {
-
-		
 		try {
 			const data = fs.readFileSync(this.serverConfigPath, 'utf8');
-			// console.log(typeof data);
-			// console.log(data.toString());
 			let config = JSON.parse(data);
-
-			// console.log(config.toString());
-			// console.log(config.staticTimetable.hostname);
 
 			this.staticTimetable.hostname = config.staticTimetable.hostname;
 			this.staticTimetable.path = config.staticTimetable.path;
+			this.staticTimetable.interval = config.staticTimetable.interval;
 
 			this.realTimeUpdates.hostname = config.realTimeUpdates.hostname;
 			this.realTimeUpdates.path = config.realTimeUpdates.path;
+			this.realTimeUpdates.interval = config.realTimeUpdates.interval;
 
 		 } catch (err) {
 			console.error(err);
@@ -190,9 +191,9 @@ module.exports = NodeHelper.create({
 		});	
 	},
 
-	checkForUpdates()
-	{
-		if(this.config.checkForGTFSUpdates) //Download fresh GTFS database
+	checkForGTFSUpdates()
+	 {
+		if(this.config.GTFSUpdatesEnabled) //Download fresh GTFS database
 		{
 			this.isStaticGTFSUpdateAvailable().then(updateAvailable => {
 				if(updateAvailable)
@@ -204,7 +205,11 @@ module.exports = NodeHelper.create({
 			this.openDatabase(this.dbPath);
 		}
 
-		if(this.config.checkForRealTimeUpdates)
+	},
+
+	checkForRealTimeUpdates()
+	{
+		if(this.config.realTimeUpdatesEnabled)
 		{
 			this.isRealTimeUpdateAvailable().then(updateAvailable => {
 				if(updateAvailable)
@@ -216,6 +221,7 @@ module.exports = NodeHelper.create({
 					});
 			});
 		}
+
 	},
 
 	processRealTime(data) {
