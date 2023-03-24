@@ -60,9 +60,7 @@ module.exports = NodeHelper.create({
 
 		this.checkForRealTimeUpdates();
 		this.initDatabase();
-		// this.checkForGTFSUpdates();
 		this.startUpdateChecks();
-
 	},
 
 	startUpdateChecks() {
@@ -106,14 +104,11 @@ module.exports = NodeHelper.create({
 	},
 
 	readServerConfig() {
-
 		//This all assumes that the data in the config will exist, undefined behavior if the field:value does not exist
 		try {
 			const data = fs.readFileSync(this.serverConfigPath, 'utf8');
 			let config = JSON.parse(data);			
 
-
-			
 			this.config.GTFSUpdatesEnabled = config.GTFSUpdatesEnabled;
 			this.config.realTimeUpdatesEnabled = config.realTimeUpdatesEnabled;
 
