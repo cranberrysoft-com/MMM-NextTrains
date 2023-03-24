@@ -136,8 +136,10 @@ module.exports = NodeHelper.create({
 
 			const { spawn } = require('child_process');
 			const pathToBashFile = './create_db.sh';
-			const executePath = './modules/NextTrains/dist/';
-			const childProcess = spawn('bash', [pathToBashFile], { cwd: executePath });
+			// const executePath = './modules/NextTrains/dist/';
+			// const childProcess = spawn('bash', [pathToBashFile], { cwd: executePath });
+			const executePath = './modules/NextTrains/';
+			const childProcess = spawn('bash', [pathToBashFile, "./dist/"], { cwd: executePath });
 
 			// Handle the output of the Bash script
 			childProcess.stdout.on('data', (data) => {
