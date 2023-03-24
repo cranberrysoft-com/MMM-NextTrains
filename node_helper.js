@@ -48,7 +48,7 @@ module.exports = NodeHelper.create({
 		// console.log(this.dbMetadata);
 		this.readServerConfig();
 		this.readDBMeta()
-		this.apikey = this.readAPIKey();
+		this.readAPIKey();
 
 		//Protobuffer setup for realtime updates
 		let root = protobuf.loadSync(this.protoFilePath);
@@ -58,25 +58,14 @@ module.exports = NodeHelper.create({
 	start() {
 		console.log("Starting node helper: " + this.name);
 
-		if(! this.config.GTFSUpdatesEnabled ) //When disabled always use local
-			this.openDatabase(this.dbPath);
-		else
-		{
-			this.getStaticGTFSLastModified().then(lastModified => {
-				if(!this.GTFSLastModified || lastModified > this.GTFSLastModified) //When enabled check if API has a newer database
-					this.updateGTFSData();
-				else //If the database are the same, use local
-					this.openDatabase(this.dbPath);
-			});
-		}
-
-
-		
-
-
 		this.checkForRealTimeUpdates();
-		this.checkForGTFSUpdates();
+		this.initDatabase();
+		// this.checkForGTFSUpdates();
+		this.startUpdateChecks();
 
+	},
+
+	startUpdateChecks() {
 		setInterval(() => {
 			this.checkForGTFSUpdates();
 		}, this.config.staticTimetable.interval * 1000);
@@ -84,6 +73,25 @@ module.exports = NodeHelper.create({
 		setInterval(() => {
 			this.checkForRealTimeUpdates();
 		}, this.config.realTimeUpdates.interval * 1000);
+	},
+
+	
+
+	initDatabase() {
+		//If static updates are disabled always use local database
+		if(! this.config.GTFSUpdatesEnabled ) 
+			this.openDatabase(this.dbPath);
+		else
+		{
+			this.getStaticGTFSLastModified().then(lastModified => {
+				//Check if the API has a new database available
+				if(!this.GTFSLastModified || lastModified > this.GTFSLastModified) 
+					this.updateGTFSData();
+				//Otherwise use the local existing database
+				else 
+					this.openDatabase(this.dbPath);
+			});
+		}
 	},
 
 	readDBMeta() {
@@ -189,18 +197,13 @@ module.exports = NodeHelper.create({
 		return customPromise;
 	},
 
-	openDatabase(path)
-	{
-		// this.buildDatabase().then(() => {
-						
-			db = new sqlite3.Database(path, sqlite3.OPEN_READ, (err) => {
-				if (err)
-					console.error(err.message);
-				else
-					console.log('Connected to the NextTrain database.');
-			});
-		// });
-
+	openDatabase(path) {
+		db = new sqlite3.Database(path, sqlite3.OPEN_READ, (err) => {
+			if (err)
+				console.error(err.message);
+			else
+				console.log('Connected to the NextTrain database.');
+		});
 	},
 
 	writeDBMeta() {
@@ -237,7 +240,6 @@ module.exports = NodeHelper.create({
 				}
 				this.writeDBMeta();
 
-				
 			})
 		});	
 	},
@@ -246,8 +248,8 @@ module.exports = NodeHelper.create({
 	{
 		if(this.config.GTFSUpdatesEnabled) //Download fresh GTFS database
 		{
-			this.isStaticGTFSUpdateAvailable().then(updateAvailable => {
-				if(updateAvailable)
+			this.getStaticGTFSLastModified().then(lastModified => {
+				if(!this.GTFSLastModified || lastModified > this.GTFSLastModified) 
 					this.updateGTFSData();
 			});
 		}
@@ -290,7 +292,6 @@ module.exports = NodeHelper.create({
 
 	readAPIKey()
 	{
-		let key = "";
 		try {
 			const data = fs.readFileSync(this.apikeyPath, 'utf8');
 			key = data;
@@ -299,7 +300,7 @@ module.exports = NodeHelper.create({
 			console.error(err);
 		 }
 
-		 return key;
+		 this.apikey = key;
 	},
 
 	getDay() {
@@ -408,46 +409,6 @@ module.exports = NodeHelper.create({
 				{
 					console.log("GTFS: Cannot reach Transport API for static GTFS data")
 					reject();
-				}
-			});
-			req.end();
-		})
-		return customPromise;
-	},
-
-
-	isStaticGTFSUpdateAvailable()
-	{		
-		const customPromise = new Promise((resolve, reject) => {
-			const httpsoptions = {
-				protocol: "https:",
-				hostname: this.config.staticTimetable.hostname,
-				path: this.config.staticTimetable.path,
-
-				method: 'HEAD',
-				headers: {"Authorization": "apikey " + this.apikey}
-			}
-
-			const req = https.request(httpsoptions, res => {
-				if (res.statusCode == 200)
-				{
-					let GTFSLastModified = new Date(res.headers["last-modified"]);
-
-					if(!this.GTFSLastModified || GTFSLastModified > this.GTFSLastModified)  // If last modified is unpopulated, update is available
-					{																					 // OR previous modification is before whats available
-						console.log("GTFS: New static GTFS data found");
-						resolve(true)
-					}
-					else
-					{
-						console.log("GTFS: Current static GTFS is the most updated")
-						resolve(false);
-					}
-				}
-				else
-				{
-					console.log("GTFS: Cannot reach Transport API for static GTFS data")
-					resolve(false);
 				}
 			});
 			req.end();
