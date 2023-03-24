@@ -2,3 +2,6 @@ key
 trains.db
 *.zip
 *.txt
+
+temp/*
+!temp/.gitkeep 

@@ -27,7 +27,7 @@ module.exports = NodeHelper.create({
 	},
 
 	//Move all into config eventually
-	dbPath: "./modules/NextTrains/dist/trains.db",
+	dbPath: "./modules/NextTrains/temp/trains.db",
 	protoFilePath: "./modules/NextTrains/gtfs-realtime.proto",
 	serverConfigPath: "./modules/NextTrains/server.conf",
 	apikeyPath: "./modules/NextTrains/key",
@@ -136,10 +136,8 @@ module.exports = NodeHelper.create({
 
 			const { spawn } = require('child_process');
 			const pathToBashFile = './create_db.sh';
-			// const executePath = './modules/NextTrains/dist/';
-			// const childProcess = spawn('bash', [pathToBashFile], { cwd: executePath });
 			const executePath = './modules/NextTrains/';
-			const childProcess = spawn('bash', [pathToBashFile, "./dist/"], { cwd: executePath });
+			const childProcess = spawn('bash', [pathToBashFile, "./temp/"], { cwd: executePath });
 
 			// Handle the output of the Bash script
 			childProcess.stdout.on('data', (data) => {
@@ -177,7 +175,7 @@ module.exports = NodeHelper.create({
 			const req = https.request(httpsoptions, res => {
 				if (res.statusCode == 200)
 				{
-					const path = `./modules/NextTrains/dist/StaticGTFS.zip`; 
+					const path = `./modules/NextTrains/temp/StaticGTFS.zip`; 
 					const filePath = fs.createWriteStream(path);
 
 
@@ -211,7 +209,7 @@ module.exports = NodeHelper.create({
 		
 		let data = {GTFSLastModified: this.GTFSLastModified}; 
 		
-		fs.writeFile("./modules/NextTrains/temp/GTFSTimeStamp", JSON.stringify(data), function(err) {
+		fs.writeFile(this.dbMetadata, JSON.stringify(data), function(err) {
 			if(err) {
 				 return console.log(err);
 			}
@@ -223,7 +221,7 @@ module.exports = NodeHelper.create({
 	updateGTFSData()
 	{
 		this.downloadGTFSData().then(() => {
-			decompress('./modules/NextTrains/dist/StaticGTFS.zip', './modules/NextTrains/dist').then(() => {
+			decompress('./modules/NextTrains/temp/StaticGTFS.zip', './modules/NextTrains/temp').then(() => {
 
 				if(db != null)
 				{
