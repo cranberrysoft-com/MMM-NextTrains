@@ -9,6 +9,7 @@ Module.register("NextTrains", {
     
     trains: [],
     realTimeUpdates: null,
+    realTimeTimeStamp: 0,
     welcomeMessage: "Welcome to NextTrains!",
     welcomed: false,
     // Default module config.
@@ -22,18 +23,9 @@ Module.register("NextTrains", {
         debug: false
     },
 
-    context: {
-        id: null,
-        station: "",
-        maxTrains: 0,
-        departedAfter: "" //HH:MM:SS
-    },
-
     start() {
+
         this.config.updateInterval = this.config.updateInterval * 1000
-        this.context.id = this.identifier;
-        this.context.station = this.config.station;
-        this.context.maxTrains = this.config.maxTrains;
 
         this.getRealTimeUpdates();
         this.getTrains();
@@ -267,36 +259,46 @@ Module.register("NextTrains", {
 
    socketNotificationReceived(notification, payload) {
 
-        if(payload.id != this.context.id)
-        {
-            // console.log(payload); // Only print payload if we own it
+        if(payload.id != this.identifier)
             return;
-        }
         
+        console.log(payload);
         if (notification === "ACTIVITY")
             this.trains = payload.trains;
         else if(notification === "REALTIME_DATA")
+        {
             this.realTimeUpdates = payload.updates;
-
+            this.realTimeTimeStamp = payload.timestamp;
+        }
+        
         this.updateDom(1000);
     },
 
     getTrains() {
         Log.info(this.name + ": Getting trains");
-        
+
         let now = new Date(); 
-        this.context.departedAfter = now.toLocaleTimeString(); //Retrieve trains from after now
+        let context = {
+            id: this.identifier,
+            station: this.config.station,
+            maxTrains: this.config.maxTrains,
+            departedAfter: now.toLocaleTimeString()
+        };
 
         this.sendSocketNotification("GET_TRAINS", {
-            context: this.context 
+            context: context 
         });
     },
 
     getRealTimeUpdates() {
         Log.info(this.name + ": Getting real time updates");
 
+        let context = {
+            id: this.identifier,
+        };
+
         this.sendSocketNotification("GET_REALTIME", {
-            context: this.context//Needs its own context, tbh maybe both context should be local to their function..investigate
+            context: context
         });
     },
 

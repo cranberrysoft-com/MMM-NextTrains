@@ -26,35 +26,44 @@ module.exports = NodeHelper.create({
 	
 	},
 
-
-	dbPath: "./modules/NextTrains/dist/trains.db",
+	//Move all into config eventually
+	dbPath: "./modules/NextTrains/temp/trains.db",
 	protoFilePath: "./modules/NextTrains/gtfs-realtime.proto",
 	serverConfigPath: "./modules/NextTrains/server.conf",
 	apikeyPath: "./modules/NextTrains/key",
-
-
+	dbMetadata: "./modules/NextTrains/temp/GTFSTimeStamp",
 	maxTrains: 50,
 	apikey: "",
+
+
+	GTFSRealTimeMessage: null, //Protobuffer root node
+
 	GTFSLastModified: null,
 	realTimeLastModified: null, //Perhaps down the road these can't stay, if I wanted to enable the plugin for different regions
 
-	GTFSRealTimeMessage: null,
 	realTimeData: {},
-	
-	start() {
 
+
+	init() {
+		// console.log(this.dbMetadata);
 		this.readServerConfig();
+		this.readDBMeta()
+		this.readAPIKey();
 
-		console.log("Starting node helper: " + this.name);
-		this.apikey = this.getApiKey();
-		
 		//Protobuffer setup for realtime updates
 		let root = protobuf.loadSync(this.protoFilePath);
 		this.GTFSRealTimeMessage = root.lookupType("transit_realtime.FeedMessage");
+	},
+	
+	start() {
+		console.log("Starting node helper: " + this.name);
 
-		this.checkForGTFSUpdates();
 		this.checkForRealTimeUpdates();
+		this.initDatabase();
+		this.startUpdateChecks();
+	},
 
+	startUpdateChecks() {
 		setInterval(() => {
 			this.checkForGTFSUpdates();
 		}, this.config.staticTimetable.interval * 1000);
@@ -64,15 +73,42 @@ module.exports = NodeHelper.create({
 		}, this.config.realTimeUpdates.interval * 1000);
 	},
 
-	readServerConfig() {
 
+	initDatabase() {
+		//If static updates are disabled always use local database
+		if(! this.config.GTFSUpdatesEnabled ) 
+			this.openDatabase(this.dbPath);
+		else
+		{
+			this.getStaticGTFSLastModified().then(lastModified => {
+				//Check if the API has a new database available
+				if(!this.GTFSLastModified || lastModified > this.GTFSLastModified) 
+					this.updateGTFSData();
+				//Otherwise use the local existing database
+				else 
+					this.openDatabase(this.dbPath);
+			});
+		}
+	},
+
+	readDBMeta() {
+		try {
+			const data = fs.readFileSync(this.dbMetadata, 'utf8');
+			let temp = JSON.parse(data);			
+			
+			this.GTFSLastModified = new Date(Date.parse(temp.GTFSLastModified));
+
+		 } catch (err) {
+			console.error(err);
+		 }
+	},
+
+	readServerConfig() {
 		//This all assumes that the data in the config will exist, undefined behavior if the field:value does not exist
 		try {
 			const data = fs.readFileSync(this.serverConfigPath, 'utf8');
 			let config = JSON.parse(data);			
 
-
-			
 			this.config.GTFSUpdatesEnabled = config.GTFSUpdatesEnabled;
 			this.config.realTimeUpdatesEnabled = config.realTimeUpdatesEnabled;
 
@@ -95,8 +131,8 @@ module.exports = NodeHelper.create({
 
 			const { spawn } = require('child_process');
 			const pathToBashFile = './create_db.sh';
-			const executePath = './modules/NextTrains/dist/';
-			const childProcess = spawn('bash', [pathToBashFile], { cwd: executePath });
+			const executePath = './modules/NextTrains/';
+			const childProcess = spawn('bash', [pathToBashFile, "./temp/"], { cwd: executePath });
 
 			// Handle the output of the Bash script
 			childProcess.stdout.on('data', (data) => {
@@ -134,7 +170,7 @@ module.exports = NodeHelper.create({
 			const req = https.request(httpsoptions, res => {
 				if (res.statusCode == 200)
 				{
-					const path = `./modules/NextTrains/StaticGTFS.zip`; 
+					const path = `./modules/NextTrains/temp/StaticGTFS.zip`; 
 					const filePath = fs.createWriteStream(path);
 
 
@@ -155,25 +191,32 @@ module.exports = NodeHelper.create({
 		return customPromise;
 	},
 
-	openDatabase(path)
-	{
-		// this.buildDatabase().then(() => {
-						
-			db = new sqlite3.Database(path, sqlite3.OPEN_READWRITE, (err) => {
-				if (err)
-					console.error(err.message);
-				else
-					console.log('Connected to the NextTrain database.');
-			});
-		// });
+	openDatabase(path) {
+		db = new sqlite3.Database(path, sqlite3.OPEN_READ, (err) => {
+			if (err)
+				console.error(err.message);
+			else
+				console.log('Connected to the NextTrain database.');
+		});
+	},
 
+	writeDBMeta() {
+		
+		let data = {GTFSLastModified: this.GTFSLastModified}; 
+		
+		fs.writeFile(this.dbMetadata, JSON.stringify(data), function(err) {
+			if(err) {
+				 return console.log(err);
+			}
+			console.log("The file was saved!");
+	  }); 
 	},
 
 
 	updateGTFSData()
 	{
 		this.downloadGTFSData().then(() => {
-			decompress('./modules/NextTrains/StaticGTFS.zip', './modules/NextTrains/dist').then(() => {
+			decompress('./modules/NextTrains/temp/StaticGTFS.zip', './modules/NextTrains/temp').then(() => {
 
 				if(db != null)
 				{
@@ -189,26 +232,21 @@ module.exports = NodeHelper.create({
 						this.openDatabase(this.dbPath);
 					});
 				}
+				this.writeDBMeta();
 
-				
 			})
 		});	
 	},
 
 	checkForGTFSUpdates()
-	 {
+	{
 		if(this.config.GTFSUpdatesEnabled) //Download fresh GTFS database
 		{
-			this.isStaticGTFSUpdateAvailable().then(updateAvailable => {
-				if(updateAvailable)
+			this.getStaticGTFSLastModified().then(lastModified => {
+				if(!this.GTFSLastModified || lastModified > this.GTFSLastModified) 
 					this.updateGTFSData();
 			});
 		}
-		else if(db == null) // Use already existing database (for development purposes)
-		{
-			this.openDatabase(this.dbPath);
-		}
-
 	},
 
 	checkForRealTimeUpdates()
@@ -219,6 +257,7 @@ module.exports = NodeHelper.create({
 				if(updateAvailable)
 					this.getRealTimeUpdates().then((buffer) => {
 						this.realTimeData = this.GTFSRealTimeMessage.decode(buffer);
+						this.realTimeLastModified = Number.parseInt(this.realTimeData.header.timestamp);
 						//this.realTimeData = this.processRealTime(this.realTimeData);
 					}).catch((err) => {
 						console.log(err);
@@ -245,9 +284,8 @@ module.exports = NodeHelper.create({
 
 
 
-	getApiKey()
+	readAPIKey()
 	{
-		let key = "";
 		try {
 			const data = fs.readFileSync(this.apikeyPath, 'utf8');
 			key = data;
@@ -256,7 +294,7 @@ module.exports = NodeHelper.create({
 			console.error(err);
 		 }
 
-		 return key;
+		 this.apikey = key;
 	},
 
 	getDay() {
@@ -278,7 +316,9 @@ module.exports = NodeHelper.create({
 				console.log("ERR: failed to query database");
 			});
 		else if(notification === "GET_REALTIME")
-			this.sendSocketNotification("REALTIME_DATA", {"id": payload.context.id, "updates": this.realTimeData}  );
+		{
+			this.sendSocketNotification("REALTIME_DATA", {"id": payload.context.id, timestamp: this.realTimeLastModified, "updates": this.realTimeData}  );
+		}
 		
 	},
 
@@ -341,9 +381,8 @@ module.exports = NodeHelper.create({
 
 	},
 
-	isStaticGTFSUpdateAvailable()
-	{		
-		
+	getStaticGTFSLastModified()
+	{
 		const customPromise = new Promise((resolve, reject) => {
 			const httpsoptions = {
 				protocol: "https:",
@@ -357,23 +396,13 @@ module.exports = NodeHelper.create({
 			const req = https.request(httpsoptions, res => {
 				if (res.statusCode == 200)
 				{
-					GTFSLastModified = new Date(res.headers["last-modified"]);
-
-					if(!this.GTFSLastModified || GTFSLastModified > this.GTFSLastModified)  // If last modified is unpopulated, update is available
-					{																					 // OR previous modification is before whats available
-						console.log("GTFS: New static GTFS data found");
-						resolve(true)
-					}
-					else
-					{
-						console.log("GTFS: Current static GTFS is the most updated")
-						resolve(false);
-					}
+					let GTFSLastModified = new Date(res.headers["last-modified"]);
+					resolve(GTFSLastModified);
 				}
 				else
 				{
 					console.log("GTFS: Cannot reach Transport API for static GTFS data")
-					resolve(false);
+					reject();
 				}
 			});
 			req.end();
@@ -389,6 +418,8 @@ module.exports = NodeHelper.create({
 		const availabilityPromise = new Promise((resolve, reject) => {
 
 			this.getRealTimeUpdates().then((buffer) => {
+
+
 				let feedMessage = this.GTFSRealTimeMessage.decode(buffer);
 				let lastModified = Number.parseInt(feedMessage.header.timestamp);
 

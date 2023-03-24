@@ -239,17 +239,16 @@ idx_all='CREATE UNIQUE INDEX idx_agency_id 	ON agency (agency_id);
 	CREATE UNIQUE INDEX idx_pathway_id		ON pathways (pathway_id);
 	CREATE UNIQUE INDEX idx_fare_id			ON fare_attributes (fare_id);';
 
-
-rm -f trains.db;
+rm -f $1/trains.db;
 
 gtfs_files="agency attributions calendar feed_info levels shapes translations calendar_dates routes stops stop_times trips transfers frequencies fare_attributes fare_rules pathways";
 
 for file in $gtfs_files; do
-	if [ ! -f ./$file.txt ]; then
+	if [ ! -f $1./$file.txt ]; then
     	continue;
 	fi	
 	
-	sed 's/\r//g' $file.txt > /tmp/$file.txt;
+	sed 's/\r//g' $1$file.txt > /tmp/$file.txt;
 	
 	header=$(head -n 1 "/tmp/$file.txt" | sed 's/\"//g');
 	echo $file;
@@ -277,11 +276,11 @@ for file in $gtfs_files; do
 	$tmp3";
 	
 	# echo "$sql" | sqlite3 db.sqlite3;
-	echo "$sql" | sqlite3 trains.db;
+	echo "$sql" | sqlite3 $1trains.db;
 	
 	tail -n +2 /tmp/$file.txt > /tmp/sqlite.tmp;
 	# printf ".mode csv \n.separator \",\" \n.import /tmp/sqlite.tmp $file\n" | sqlite3 db.sqlite3;
-	printf ".mode csv \n.separator \",\" \n.import /tmp/sqlite.tmp $file\n" | sqlite3 trains.db;
+	printf ".mode csv \n.separator \",\" \n.import /tmp/sqlite.tmp $file\n" | sqlite3 $1trains.db;
 	
 	rm -f /tmp/sqlite.tmp;
 	rm -f /tmp/$file.txt;
