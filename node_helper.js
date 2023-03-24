@@ -75,7 +75,6 @@ module.exports = NodeHelper.create({
 		}, this.config.realTimeUpdates.interval * 1000);
 	},
 
-	
 
 	initDatabase() {
 		//If static updates are disabled always use local database
@@ -176,7 +175,7 @@ module.exports = NodeHelper.create({
 			const req = https.request(httpsoptions, res => {
 				if (res.statusCode == 200)
 				{
-					const path = `./modules/NextTrains/StaticGTFS.zip`; 
+					const path = `./modules/NextTrains/dist/StaticGTFS.zip`; 
 					const filePath = fs.createWriteStream(path);
 
 
@@ -222,7 +221,7 @@ module.exports = NodeHelper.create({
 	updateGTFSData()
 	{
 		this.downloadGTFSData().then(() => {
-			decompress('./modules/NextTrains/StaticGTFS.zip', './modules/NextTrains/dist').then(() => {
+			decompress('./modules/NextTrains/dist/StaticGTFS.zip', './modules/NextTrains/dist').then(() => {
 
 				if(db != null)
 				{
