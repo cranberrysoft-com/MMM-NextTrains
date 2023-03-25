@@ -48,7 +48,6 @@ module.exports = NodeHelper.create({
 		// console.log(this.dbMetadata);
 		this.readServerConfig();
 		this.readDBMeta()
-		this.readAPIKey();
 
 		//Protobuffer setup for realtime updates
 		let root = protobuf.loadSync(this.protoFilePath);
@@ -119,6 +118,8 @@ module.exports = NodeHelper.create({
 			this.config.realTimeUpdates.hostname = config.realTimeUpdates.hostname;
 			this.config.realTimeUpdates.path = config.realTimeUpdates.path;
 			this.config.realTimeUpdates.interval = config.realTimeUpdates.interval;
+
+			this.apikey = config.apikey;
 
 		 } catch (err) {
 			console.error(err);
@@ -280,21 +281,6 @@ module.exports = NodeHelper.create({
 
 		// }
 		// return data;
-	},
-
-
-
-	readAPIKey()
-	{
-		try {
-			const data = fs.readFileSync(this.apikeyPath, 'utf8');
-			key = data;
-			key = key.replace(/[\n\r]/g, '');  //Note: On a Raspberry Pi the API key is appended with a newline
-		 } catch (err) {
-			console.error(err);
-		 }
-
-		 this.apikey = key;
 	},
 
 	getDay() {

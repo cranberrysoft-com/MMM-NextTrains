@@ -20,7 +20,7 @@ A MagicMirror module that displays the Sydney trains using GTFS transport data f
   5. ```sudo apt-get install sqlite3```
   6. Create an account on [Transport NSW OpenData](https://opendata.transport.nsw.gov.au/)
   7. Create an application and obtain an API key from [Transport NSW OpenData Applications](https://opendata.transport.nsw.gov.au/applications)
-  8. Create a file named 'key' with the apikey inside in the NextTrains directory (No new line character)
+  8. Replace <YOUR_API_KEY_HERE> in `server.conf` with your api key
   9. Insert the module configurations into the MagicMirror config file
   
 ### Windows
