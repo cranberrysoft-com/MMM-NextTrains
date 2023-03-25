@@ -26,3 +26,8 @@ td {
 .early-mild {
   color: teal;
 }
+
+.cancelled {
+  text-decoration: line-through;
+  color:#8B0000;
+}

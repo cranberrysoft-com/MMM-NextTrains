@@ -127,7 +127,7 @@ Module.register("NextTrains", {
     },
 
 
-    createTrainRow(destination_name, route_name, departure, secondsDelayed=0, type=0) {
+    createTrainRow(destination_name, route_name, departure, secondsDelayed=0, cancelled=false) {
         let row = document.createElement('tr');
         row.className = "align-left small normal";
 
@@ -137,6 +137,8 @@ Module.register("NextTrains", {
         let time = document.createElement('td');
         let delay = this.getDelayFormat(secondsDelayed);
 
+        if(cancelled == 1)
+            row.classList.add(   "cancelled"   );
 
         if(delay.innerText != "")
         {
@@ -211,7 +213,9 @@ Module.register("NextTrains", {
             else
                 departureDisplay = (minsUntilTrain + parseInt(secondsModifier/60))+"m";
 
-            row = this.createTrainRow( platform, t.trip_headsign, departureDisplay, secondsModifier, delayType);
+
+            let cancelled = this.isTrainCancelled(t, realTimeMap);
+            row = this.createTrainRow( platform, t.trip_headsign, departureDisplay, secondsModifier, cancelled);
 
             wrapper.appendChild(row)
         });
@@ -244,6 +248,7 @@ Module.register("NextTrains", {
         let arr = this.realTimeUpdates.entity;
 
         let type = arr[i].tripUpdate.trip.scheduleRelationship;
+
         if(type == undefined || type == "SCHEDULED") 
         {   
             for (let j in arr[i].tripUpdate.stopTimeUpdate) 
@@ -254,6 +259,31 @@ Module.register("NextTrains", {
         }
 
         return 0;
+    },
+
+
+
+    isTrainCancelled(train, tripIDMap) {
+
+        let i = tripIDMap[train.trip_id];
+        
+        // IF real time updates have not been obtained OR
+        // IF the train does not have a corrosponding record in the real time updates
+        if (!this.realTimeUpdates || i == undefined) 
+            return 0;
+
+        let arr = this.realTimeUpdates.entity;
+
+        let type = arr[i].tripUpdate.trip.scheduleRelationship;
+
+
+        if(type == "CANCELED")
+        {
+            return true;
+        }
+
+
+        return false;
     },
 
 
