@@ -313,55 +313,47 @@ module.exports = NodeHelper.create({
 		//ADD Database safety here
 		const customPromise = new Promise((resolve, reject) => {
 
-
 			if(db == null)
 				reject();
 
 			context.maxTrains = Math.min(context.maxTrains, this.maxTrains);
-			db.serialize(() => {
-				
-				db.all(`select 
-								* 
-							from 
-								calendar c 
-								join (
-								select 
-									* 
-								from 
-									trips t 
-									join (
-										select 
-										* 
-										from 
-										stop_times st 
-										JOIN (
-											select 
-												p.stop_name, 
-												c.stop_name, 
-												c.stop_id 
-											from 
-												stops p 
-												join stops c on p.stop_id = c.parent_station 
-											where 
-												p.stop_name = "${context.station}"
-										) target_stops on st.stop_id = target_stops.stop_id 
-										where 
-										st.departure_time >= "${context.departedAfter}"
-										and st.pickup_type = 0
-									) st on t.trip_id = st.trip_id
-								) t on c.service_id = t.service_id 
-							where 
-								c.${day} = 1 and c.start_date <= strftime('%Y%m%d', 'now') 
+			let sql = `
+				SELECT * 
+				FROM calendar c 
+				JOIN (
+					SELECT * 
+					FROM trips t 
+					JOIN (
+						SELECT * 
+						FROM 
+						stop_times st 
+					JOIN (
+						SELECT 
+							p.stop_name, 
+							c.stop_name, 
+							c.stop_id 
+						FROM stops p 
+						JOIN stops c ON p.stop_id = c.parent_station 
+						WHERE p.stop_name = ?
+					) target_stops ON st.stop_id = target_stops.stop_id 
+				WHERE st.departure_time >= ?
+						AND st.pickup_type = 0
+				) st ON t.trip_id = st.trip_id
+			) t ON c.service_id = t.service_id 
+							WHERE c.${day} = 1 
+								AND c.start_date <= strftime('%Y%m%d', 'now') 
 								AND strftime('%Y%m%d', 'now') <= c.end_date 
-							ORDER by 
-								t.departure_time 
-							LIMIT ${context.maxTrains}`, (err, trains) => {
+				ORDER BY t.departure_time 
+				LIMIT ?`
+
+				let params = [context.station, context.departedAfter, context.maxTrains];
+				
+				db.all(sql, params, (err, trains) => {
 				  if (err) {
 					  console.error(err.message);
 					}
 					resolve(trains);
 				});
-			 });
 		});
 
 		return customPromise;
