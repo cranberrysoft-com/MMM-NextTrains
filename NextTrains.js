@@ -129,9 +129,9 @@ Module.register("NextTrains", {
         let isSecsNotZero = secondsDelayed != 0;
 
         if ( this.config.debug && isSecsNotZero) // +m:s (+s)
-            delay.innerText = "+" + mins + ":" + (secondsDelayed%60) + " (+" + secondsDelayed + "s)";
+            delay.innerText = "+" + mins.toString().padStart(2, "0") + ":" + (secondsDelayed%60).toString().padStart(2, "0") + " (+" + secondsDelayed + "s)";
         else if( this.config.delaysFormat == "m:s" && isSecsNotZero) //+m:s
-            delay.innerText = "+" + mins + ":" + (secondsDelayed%60);
+            delay.innerText = "+" + mins.toString().padStart(2, "0") + ":" + (secondsDelayed%60).toString().padStart(2, "0");
         else if( this.config.delaysFormat == "m" && isMinsNotZero)  //+min
             delay.innerText = "+" + mins + "m";
         else if ( this.config.delaysFormat == "s" && isSecsNotZero) // +s
@@ -145,7 +145,7 @@ Module.register("NextTrains", {
         let row = document.createElement('tr');
         row.className = "align-left small normal";
 
-        
+
         let destination = document.createElement('td');
         let route = document.createElement('td');
         let time = document.createElement('td');
