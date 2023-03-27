@@ -324,27 +324,24 @@ module.exports = NodeHelper.create({
 					SELECT * 
 					FROM trips t 
 					JOIN (
-						SELECT * 
-						FROM 
-						stop_times st 
-					JOIN (
 						SELECT 
+							st.*,
 							p.stop_name, 
 							c.stop_name, 
 							c.stop_id 
-						FROM stops p 
+						FROM stop_times st 
+						JOIN stops p ON st.stop_id = c.stop_id
 						JOIN stops c ON p.stop_id = c.parent_station 
 						WHERE p.stop_name = ?
-					) target_stops ON st.stop_id = target_stops.stop_id 
-				WHERE st.departure_time >= ?
+						AND st.departure_time >= ?
 						AND st.pickup_type = 0
-				) st ON t.trip_id = st.trip_id
-			) t ON c.service_id = t.service_id 
-							WHERE c.${day} = 1 
+					) st ON t.trip_id = st.trip_id
+				) t ON c.service_id = t.service_id 
+								WHERE c.${day} = 1 
 								AND c.start_date <= strftime('%Y%m%d', 'now') 
 								AND strftime('%Y%m%d', 'now') <= c.end_date 
 				ORDER BY t.departure_time 
-				LIMIT ?`
+ 				LIMIT ?`
 
 				let params = [context.station, context.departedAfter, context.maxTrains];
 				
