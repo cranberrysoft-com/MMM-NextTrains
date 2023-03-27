@@ -293,7 +293,7 @@ Module.register("NextTrains", {
             return;
         
         console.log(payload);
-        if (notification === "ACTIVITY")
+        if (notification === "STATIC_DATA")
             this.trains = payload.trains;
         else if(notification === "REALTIME_DATA")
         {

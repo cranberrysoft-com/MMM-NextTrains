@@ -297,7 +297,7 @@ module.exports = NodeHelper.create({
 		
 		if(notification === "GET_TRAINS") 
 			this.getTrains(payload.context, this.getDay()).then((trains) => {
-				this.sendSocketNotification("ACTIVITY", {"id": payload.context.id, "trains": trains}  );
+				this.sendSocketNotification("STATIC_DATA", {"id": payload.context.id, "trains": trains}  );
 			}).catch(() => {
 				console.log("ERR: failed to query database");
 			});
