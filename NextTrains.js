@@ -51,19 +51,33 @@ Module.register("NextTrains", {
 
     createDateTimeFromTime(time) {
         let d = new Date()
-        var datestring = d.getFullYear()  + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
+        let timeAdjusted = time;
 
-        return new Date(datestring + "T" + time)
+        let timeElts = timeAdjusted.split(":");
+        let hours = Number.parseInt(timeElts[0]);
+        
+        //GTFS services may occur at invalid times e.g. 26:30:00  
+        if(  hours >= 24  ) 
+        {
+            hours -= 24;
+            d.setDate(d.getDate() + 1);
+            timeElts[0] = hours.toString().padStart(2, "0");
+            timeAdjusted = timeElts.join(":");
+        }
+
+        var datestring = d.getFullYear()  + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
+        return new Date(datestring + "T" + timeAdjusted);
     },
 
-    getDifferenceInMinutes(d1, d2)
+    getDifferenceInMinutes(d1, d2) 
     {
+
         var diffMs = (d1 - d2); // milliseconds between d1 & d2
-        // var diffDays = Math.floor(diffMs / 86400000); // days
-        // var diffHrs = Math.floor((diffMs % 86400000) / 3600000); // hours
+        var diffDays = Math.floor(diffMs / 86400000); // days
+        var diffHrs = Math.floor((diffMs % 86400000) / 3600000); // hours
         var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes
 
-        return diffMins;
+        return diffMins+(diffHrs*60)+(24*60*diffDays);
     }, 
 
     getHeader() {
@@ -307,7 +321,7 @@ Module.register("NextTrains", {
     getTrains() {
         Log.info(this.name + ": Getting trains");
 
-        let now = new Date(); 
+        let now = new Date();
         let context = {
             id: this.identifier,
             station: this.config.station,
