@@ -1,5 +1,5 @@
 # MMM-NextTrains
-A MagicMirror module that displays the Sydney trains using GTFS transport data from the [NSW Transport API](https://opendata.transport.nsw.gov.au/).
+A MagicMirror module that displays when Sydney trains depart from a selected station, using raw GTFS data provided by the [NSW Transport API](https://opendata.transport.nsw.gov.au/).
 
 
 ## Dependencies
