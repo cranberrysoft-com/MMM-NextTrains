@@ -51,19 +51,33 @@ Module.register("NextTrains", {
 
     createDateTimeFromTime(time) {
         let d = new Date()
-        var datestring = d.getFullYear()  + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
+        let timeAdjusted = time;
 
-        return new Date(datestring + "T" + time)
+        let timeElts = timeAdjusted.split(":");
+        let hours = Number.parseInt(timeElts[0]);
+        
+        //GTFS services may occur at invalid times e.g. 26:30:00  
+        if(  hours >= 24  ) 
+        {
+            hours -= 24;
+            d.setDate(d.getDate() + 1);
+            timeElts[0] = hours.toString().padStart(2, "0");
+            timeAdjusted = timeElts.join(":");
+        }
+
+        var datestring = d.getFullYear()  + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
+        return new Date(datestring + "T" + timeAdjusted);
     },
 
-    getDifferenceInMinutes(d1, d2)
+    getDifferenceInMinutes(d1, d2) 
     {
+
         var diffMs = (d1 - d2); // milliseconds between d1 & d2
-        // var diffDays = Math.floor(diffMs / 86400000); // days
-        // var diffHrs = Math.floor((diffMs % 86400000) / 3600000); // hours
+        var diffDays = Math.floor(diffMs / 86400000); // days
+        var diffHrs = Math.floor((diffMs % 86400000) / 3600000); // hours
         var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes
 
-        return diffMins;
+        return diffMins+(diffHrs*60)+(24*60*diffDays);
     }, 
 
     getHeader() {
@@ -115,9 +129,9 @@ Module.register("NextTrains", {
         let isSecsNotZero = secondsDelayed != 0;
 
         if ( this.config.debug && isSecsNotZero) // +m:s (+s)
-            delay.innerText = "+" + mins + ":" + (secondsDelayed%60) + " (+" + secondsDelayed + "s)";
+            delay.innerText = "+" + mins.toString().padStart(2, "0") + ":" + (secondsDelayed%60).toString().padStart(2, "0") + " (+" + secondsDelayed + "s)";
         else if( this.config.delaysFormat == "m:s" && isSecsNotZero) //+m:s
-            delay.innerText = "+" + mins + ":" + (secondsDelayed%60);
+            delay.innerText = "+" + mins.toString().padStart(2, "0") + ":" + (secondsDelayed%60).toString().padStart(2, "0");
         else if( this.config.delaysFormat == "m" && isMinsNotZero)  //+min
             delay.innerText = "+" + mins + "m";
         else if ( this.config.delaysFormat == "s" && isSecsNotZero) // +s
@@ -131,7 +145,7 @@ Module.register("NextTrains", {
         let row = document.createElement('tr');
         row.className = "align-left small normal";
 
-        
+
         let destination = document.createElement('td');
         let route = document.createElement('td');
         let time = document.createElement('td');
@@ -293,7 +307,7 @@ Module.register("NextTrains", {
             return;
         
         console.log(payload);
-        if (notification === "ACTIVITY")
+        if (notification === "STATIC_DATA")
             this.trains = payload.trains;
         else if(notification === "REALTIME_DATA")
         {
@@ -307,7 +321,7 @@ Module.register("NextTrains", {
     getTrains() {
         Log.info(this.name + ": Getting trains");
 
-        let now = new Date(); 
+        let now = new Date();
         let context = {
             id: this.identifier,
             station: this.config.station,

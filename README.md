@@ -45,6 +45,7 @@ A MagicMirror module that displays the Sydney trains using GTFS transport data f
 | `station` | The name of the Sydney train station to monitor |
 | `updateInterval` | How often the widget should refresh it's data (in seconds), default is `10`. |
 | `maxTrains` | The maximum number of trains to display at a time, default is `10` |
+| `delaysFormat` | Either `m`, `s` or `m:s` Determines what format to display delays in, default is `m` |
 
 ---
 
