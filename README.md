@@ -42,7 +42,7 @@ A MagicMirror module that displays when Sydney trains depart from a selected sta
 ## Config
 | **Option** | **Description** |
 | --- | --- |
-| `station` | The name of the Sydney train station to monitor |
+| `station` | The name of the Sydney train station to monitor e.g. "Central Station" or "North Sydney Station"|
 | `updateInterval` | How often the widget should refresh it's data (in seconds), default is `10`. |
 | `maxTrains` | The maximum number of trains to display at a time, default is `10` |
 | `delaysFormat` | Either `m`, `s` or `m:s` Determines what format to display delays in, default is `m` |
