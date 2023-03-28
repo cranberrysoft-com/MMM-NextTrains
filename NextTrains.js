@@ -14,7 +14,11 @@ Module.register("NextTrains", {
     welcomed: false,
     // Default module config.
     defaults: {
-        updateInterval : 10, //Seconds before changeing
+        // updateInterval : 10, //Seconds before changeing
+
+        staticInterval: 1800, //30 minutes
+        realTimeInterval: 10,
+
         station: "",
         maxTrains: 4,
         lateCriticalLimit: 600,
@@ -25,14 +29,22 @@ Module.register("NextTrains", {
 
     start() {
 
-        this.config.updateInterval = this.config.updateInterval * 1000
+        // this.config.updateInterval = this.config.updateInterval * 1000
+        
+        let staticInterval = this.config.staticInterval * 1000;
+        let realTimeInterval = this.config.realTimeInterval * 1000;
 
         this.getRealTimeUpdates();
         this.getTrains();
+
         setInterval(() => {
             this.getTrains();
+        }, staticInterval);
+
+
+        setInterval(() => {
             this.getRealTimeUpdates();
-        }, this.config.updateInterval);
+        }, realTimeInterval);
 
     },
 
@@ -203,11 +215,31 @@ Module.register("NextTrains", {
         
         let realTimeMap = this.generateRealTimeMap(this.trains);
 
+        let now = new Date();
+
+        let total = 0;
+        let max = this.config.maxTrains;
+
         this.trains.forEach(t => {
 
             // Compress this all into some sort of class
 
             let departureDTPlanned = this.createDateTimeFromTime(t.departure_time);
+
+            if(departureDTPlanned <= now)
+                return;
+
+            if(total >= max)
+            {
+                return;
+            }
+            total++;
+
+            
+            
+
+
+
             let minsUntilTrain = this.getDifferenceInMinutes(departureDTPlanned, new Date());
             
             let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeMap);
@@ -322,11 +354,13 @@ Module.register("NextTrains", {
         Log.info(this.name + ": Getting trains");
 
         let now = new Date();
+        console.log(now.toLocaleTimeString());
         let context = {
             id: this.identifier,
             station: this.config.station,
-            maxTrains: this.config.maxTrains,
-            departedAfter: now.toLocaleTimeString()
+            // maxTrains: this.config.maxTrains,
+            // departedAfter: now.toLocaleTimeString()
+            departedAfter: "00:00:00"
         };
 
         this.sendSocketNotification("GET_TRAINS", {

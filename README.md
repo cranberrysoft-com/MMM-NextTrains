@@ -43,10 +43,12 @@ A MagicMirror module that displays when Sydney trains depart from a selected sta
 | **Option** | **Description** |
 | --- | --- |
 | `station` | The name of the Sydney train station to monitor e.g. "Central Station" or "North Sydney Station"|
-| `updateInterval` | How often the widget should refresh it's data (in seconds), default is `10`. |
+| `staticInterval` | How often the widget should refresh it's static data (in seconds), default is `1800`. |
+| `realTimeInterval` | How often the widget should refresh it's realtime data (in seconds), default is `10`. |
 | `maxTrains` | The maximum number of trains to display at a time, default is `10` |
 | `delaysFormat` | Either `m`, `s` or `m:s` Determines what format to display delays in, default is `m` |
 
 ---
+
 
 <a href="https://www.buymeacoffee.com/CptMeetKat" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>

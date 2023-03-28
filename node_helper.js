@@ -316,7 +316,7 @@ module.exports = NodeHelper.create({
 			if(db == null)
 				reject();
 
-			context.maxTrains = Math.min(context.maxTrains, this.maxTrains);
+			// context.maxTrains = Math.min(context.maxTrains, this.maxTrains);
 			let sql = `
 				SELECT * 
 				FROM calendar c 
@@ -340,10 +340,9 @@ module.exports = NodeHelper.create({
 								WHERE c.${day} = 1 
 								AND c.start_date <= strftime('%Y%m%d', 'now') 
 								AND strftime('%Y%m%d', 'now') <= c.end_date 
-				ORDER BY t.departure_time 
- 				LIMIT ?`
+				ORDER BY t.departure_time`
 
-				let params = [context.station, context.departedAfter, context.maxTrains];
+				let params = [context.station, context.departedAfter];
 				
 				db.all(sql, params, (err, trains) => {
 				  if (err) {
