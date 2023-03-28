@@ -12,6 +12,7 @@ Module.register("NextTrains", {
     realTimeTimeStamp: 0,
     welcomeMessage: "Welcome to NextTrains!",
     welcomed: false,
+    dbInitialised: false,
     // Default module config.
     defaults: {
         // updateInterval : 10, //Seconds before changeing
@@ -37,9 +38,23 @@ Module.register("NextTrains", {
         this.getRealTimeUpdates();
         this.getTrains();
 
-        setInterval(() => {
-            this.getTrains();
-        }, staticInterval);
+
+        //Gremlin looking function, refactor pending..
+        //Query for database fast
+        let cancelInterval2 = setInterval(() => {
+            if(this.dbInitialised)
+            {
+                clearInterval(cancelInterval2);
+                setInterval(() => {
+                    this.getTrains();
+                }, staticInterval);
+            }
+            else
+            {
+                this.getTrains();
+            }
+        }, 10 * 1000);
+
 
 
         setInterval(() => {
@@ -226,13 +241,9 @@ Module.register("NextTrains", {
 
             let departureDTPlanned = this.createDateTimeFromTime(t.departure_time);
 
-            if(departureDTPlanned <= now)
+            if(departureDTPlanned <= now || total >= max)
                 return;
 
-            if(total >= max)
-            {
-                return;
-            }
             total++;
 
             
@@ -340,7 +351,10 @@ Module.register("NextTrains", {
         
         console.log(payload);
         if (notification === "STATIC_DATA")
+        {
             this.trains = payload.trains;
+            this.dbInitialised = true;
+        }
         else if(notification === "REALTIME_DATA")
         {
             this.realTimeUpdates = payload.updates;
