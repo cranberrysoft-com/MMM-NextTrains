@@ -297,8 +297,6 @@ Module.register("NextTrains", {
 
             let departureTimeActual = departureDTPlanned;
             departureTimeActual.setSeconds(departureTimeActual.getSeconds() + secondsModifier);
-            
-            let departureTimeActualLocal = departureTimeActual.toLocaleTimeString();
 
             let platform = t["stop_name:1"].split(' ').pop();
             let departureDisplay = "";
