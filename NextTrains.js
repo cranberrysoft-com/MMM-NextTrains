@@ -201,11 +201,11 @@ Module.register("NextTrains", {
         return row;
     },
 
-    generateRealTimeStopsMap() {
+    generateRealTimeStopsMap(realTimeUpdates) {
 
         let map = {};
 
-        let arr = this.realTimeUpdates.entity;
+        let arr = realTimeUpdates.entity;
         for (let i in arr)
         {
                 let tripID = arr[i].tripUpdate.trip.tripId;
@@ -239,11 +239,11 @@ Module.register("NextTrains", {
         return map;
     },
 
-    generateRealTimeMap() {
+    generateRealTimeMap(realTimeUpdates) {
 
         let map = {};
 
-        let arr = this.realTimeUpdates.entity;
+        let arr = realTimeUpdates.entity;
         for (let i in arr)
         {
             let dupeID = map[arr[i].tripUpdate.trip.tripId];
@@ -264,13 +264,13 @@ Module.register("NextTrains", {
         const header_row = this.createTableHeader();
         wrapper.appendChild(header_row);
 
-
+        let realTimeUpdates = this.realTimeUpdates;
 
 
         let row = null;
         
-        let realTimeMap = this.generateRealTimeMap();
-        let realTimeStopsMap = this.generateRealTimeStopsMap();
+        let realTimeMap = this.generateRealTimeMap(realTimeUpdates);
+        let realTimeStopsMap = this.generateRealTimeStopsMap(realTimeUpdates);
 
         let now = new Date();
 
@@ -282,7 +282,7 @@ Module.register("NextTrains", {
             // All this is too complicated looking, should compress it into one class for easy use/reuse
 
             let departureDTPlanned = this.createDateTimeFromTime(t.departure_time);
-            let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeStopsMap);
+            let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeStopsMap, realTimeUpdates);
             
             let departureRealTime = new Date(departureDTPlanned);
             departureRealTime.setSeconds(departureRealTime.getSeconds() + secondsModifier);
@@ -311,7 +311,7 @@ Module.register("NextTrains", {
                 departureDisplay = (minsUntilTrain)+"m";
 
 
-            let cancelled = this.isTrainCancelled(t, realTimeMap);
+            let cancelled = this.isTrainCancelled(t, realTimeMap, realTimeUpdates);
             row = this.createTrainRow( platform, t.trip_headsign, departureDisplay, secondsModifier, cancelled);
 
             wrapper.appendChild(row)
@@ -333,20 +333,20 @@ Module.register("NextTrains", {
     },
 
 
-    findRealTimeChangesInSeconds(train, stopIDMap) {
+    findRealTimeChangesInSeconds(train, stopIDMap, realTimeUpdates) {
 
         let match = stopIDMap[train.trip_id + "." + train.stop_id];
 
         // IF real time updates have not been obtained OR
         // IF the train does not have a corrosponding record in the real time updates
-        if (!this.realTimeUpdates || match == undefined) 
+        if (!realTimeUpdates || match == undefined) 
             return 0;
 
         if(match != undefined)
         {
             let i = match.trip;
             let j = match.stop;
-            let arr = this.realTimeUpdates.entity;
+            let arr = realTimeUpdates.entity;
 
             //https://developers.google.com/transit/gtfs-realtime/reference/#message-stoptimeevent
             //The field time or delay could be used: TODO
@@ -367,16 +367,16 @@ Module.register("NextTrains", {
 
 
 
-    isTrainCancelled(train, tripIDMap) {
+    isTrainCancelled(train, tripIDMap, realTimeUpdates) {
 
         let i = tripIDMap[train.trip_id];
         
         // IF real time updates have not been obtained OR
         // IF the train does not have a corrosponding record in the real time updates
-        if (!this.realTimeUpdates || i == undefined) 
+        if (!realTimeUpdates || i == undefined) 
             return 0;
 
-        let arr = this.realTimeUpdates.entity;
+        let arr = realTimeUpdates.entity;
 
         let type = arr[i].tripUpdate.trip.scheduleRelationship;
 
