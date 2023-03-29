@@ -201,6 +201,44 @@ Module.register("NextTrains", {
         return row;
     },
 
+    generateRealTimeStopsMap() {
+
+        let map = {};
+
+        let arr = this.realTimeUpdates.entity;
+        for (let i in arr)
+        {
+                let tripID = arr[i].tripUpdate.trip.tripId;
+
+                // let startDate = arr[i].tripUpdate.trip.start_date;
+                // https://developers.google.com/transit/gtfs-realtime/reference/#message-tripdescriptor
+                // Start date should be used to disambiguate trips that are so late that they collide with a scheduled trip on the next day.
+                // However this rarely happen, but should eventually be built out for accuracy
+                // Ideally the map ID will become startDate + tripID + stopID
+                // Further ID should become hash(startDate + tripID + stopID), to reduce memory usage
+                // Especially import when deploying for PI
+
+                let type = arr[i].tripUpdate.trip.scheduleRelationship;
+
+                if(this.isScheduledTrip(type)) 
+                {   
+                    for (let j in arr[i].tripUpdate.stopTimeUpdate) 
+                    {
+                        let stopID = arr[i].tripUpdate.stopTimeUpdate[j].stopId
+                        let newID = tripID + "." + stopID;
+
+                        if(map[newID] == undefined)
+                        {
+                            map[newID] = {"trip": i, "stop": j };
+                        }
+                        else
+                            console.error("Error: multiple IDs found in realtime data");
+                    }
+                }
+        }
+        return map;
+    },
+
     generateRealTimeMap() {
 
         let map = {};
@@ -208,8 +246,8 @@ Module.register("NextTrains", {
         let arr = this.realTimeUpdates.entity;
         for (let i in arr)
         {
-            let tripID = map[arr[i].tripUpdate.trip.tripId];
-            if(map[tripID] == undefined)
+            let dupeID = map[arr[i].tripUpdate.trip.tripId];
+            if(map[dupeID] == undefined)
                 map[arr[i].tripUpdate.trip.tripId] = i;
             else
                 console.error("Error: multiple IDs found in realtime data");
@@ -226,9 +264,13 @@ Module.register("NextTrains", {
         const header_row = this.createTableHeader();
         wrapper.appendChild(header_row);
 
+
+
+
         let row = null;
         
-        let realTimeMap = this.generateRealTimeMap(this.trains);
+        let realTimeMap = this.generateRealTimeMap();
+        let realTimeStopsMap = this.generateRealTimeStopsMap();
 
         let now = new Date();
 
@@ -240,10 +282,7 @@ Module.register("NextTrains", {
             // All this is too complicated looking, should compress it into one class for easy use/reuse
 
             let departureDTPlanned = this.createDateTimeFromTime(t.departure_time);
-
-            //Now that this is occurs before the if statement, introduces major slowdown.
-            //Need to map the stops and use that rather than realTimeMap
-            let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeMap);
+            let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeStopsMap);
             
             let departureRealTime = new Date(departureDTPlanned);
             departureRealTime.setSeconds(departureRealTime.getSeconds() + secondsModifier);
@@ -252,11 +291,6 @@ Module.register("NextTrains", {
                 return;
 
             total++;
-
-            
-            
-
-
 
             let minsUntilTrain = this.getDifferenceInMinutes(departureRealTime, now);
             
@@ -300,30 +334,37 @@ Module.register("NextTrains", {
         return type;
     },
 
-    findRealTimeChangesInSeconds(train, tripIDMap) {
-        //This function should be reviewed once cancelled is implemented
 
-        let i = tripIDMap[train.trip_id];
-        
+    findRealTimeChangesInSeconds(train, stopIDMap) {
+
+        let match = stopIDMap[train.trip_id + "." + train.stop_id];
+
         // IF real time updates have not been obtained OR
         // IF the train does not have a corrosponding record in the real time updates
-        if (!this.realTimeUpdates || i == undefined) 
+        if (!this.realTimeUpdates || match == undefined) 
             return 0;
 
-        let arr = this.realTimeUpdates.entity;
+        if(match != undefined)
+        {
+            let i = match.trip;
+            let j = match.stop;
+            let arr = this.realTimeUpdates.entity;
 
-        let type = arr[i].tripUpdate.trip.scheduleRelationship;
+            //https://developers.google.com/transit/gtfs-realtime/reference/#message-stoptimeevent
+            //The field time or delay could be used: TODO
+            if(arr[i].tripUpdate.stopTimeUpdate[j].departure.delay == undefined)
+                return 0;
 
-        if(type == undefined || type == "SCHEDULED") 
-        {   
-            for (let j in arr[i].tripUpdate.stopTimeUpdate) 
-            {
-                if(arr[i].tripUpdate.stopTimeUpdate[j].stopId == train.stop_id)
-                    return arr[i].tripUpdate.stopTimeUpdate[j].departure.delay;
-            }
+            return arr[i].tripUpdate.stopTimeUpdate[j].departure.delay;
         }
-
+        
         return 0;
+    },
+
+
+    isScheduledTrip(type) {
+        // Undefined may or may not designate a trip as SCHEDULED, consult protobuf file
+        return (type == undefined || type == "SCHEDULED") 
     },
 
 
