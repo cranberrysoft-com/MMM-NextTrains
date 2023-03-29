@@ -259,28 +259,12 @@ module.exports = NodeHelper.create({
 					this.getRealTimeUpdates().then((buffer) => {
 						this.realTimeData = this.GTFSRealTimeMessage.decode(buffer);
 						this.realTimeLastModified = Number.parseInt(this.realTimeData.header.timestamp);
-						//this.realTimeData = this.processRealTime(this.realTimeData);
 					}).catch((err) => {
 						console.log(err);
 					});
 			});
 		}
 
-	},
-
-	processRealTime(data) {
-		// Stub function that will filter out excessive records from real time data to reduce overhead on the client
-		
-		// for (let i = 0; i < data.entity.length; i++) {
-			
-		// 	let type = data.entity[i].tripUpdate.trip.scheduleRelationship;
-		// 	if(type == 0) // SCHEDULED //0 SCHEDULED, 
-		// 	{
-		// 	}
-		// 	else if(type == 5){}	
-
-		// }
-		// return data;
 	},
 
 	getDay() {
