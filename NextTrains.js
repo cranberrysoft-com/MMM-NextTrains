@@ -13,12 +13,13 @@ Module.register("NextTrains", {
     welcomeMessage: "Welcome to NextTrains!",
     welcomed: false,
     dbInitialised: false,
+    realTimeInitialised: false,
     // Default module config.
     defaults: {
         // updateInterval : 10, //Seconds before changeing
 
         staticInterval: 1800, //30 minutes
-        realTimeInterval: 10,
+        realTimeInterval: 60,
 
         station: "",
         maxTrains: 4,
@@ -41,26 +42,32 @@ Module.register("NextTrains", {
 
         //Gremlin looking function, refactor pending..
         //Query for database fast
-        let cancelInterval2 = setInterval(() => {
+        let fastStaticLoop = setInterval(() => {
             if(this.dbInitialised)
             {
-                clearInterval(cancelInterval2);
+                clearInterval(fastStaticLoop);
                 setInterval(() => {
                     this.getTrains();
                 }, staticInterval);
             }
             else
-            {
                 this.getTrains();
-            }
         }, 10 * 1000);
 
 
 
-        setInterval(() => {
-            this.getRealTimeUpdates();
-        }, realTimeInterval);
+        let fastRealTimeLoop = setInterval(() => {
+            if(this.realTimeInitialised)
+            {
+                clearInterval(fastRealTimeLoop);
+                setInterval(() => {
+                    this.getRealTimeUpdates();
+                }, realTimeInterval);
+            }
+            else
+                this.getRealTimeUpdates();
 
+        }, 10 * 1000);
     },
 
     initialMessage() {
@@ -404,6 +411,11 @@ Module.register("NextTrains", {
         {
             this.realTimeUpdates = payload.updates;
             this.realTimeTimeStamp = payload.timestamp;
+
+            if(this.realTimeUpdates.entity != undefined) //Switches off fast real time querying, TODO
+                this.realTimeInitialised = true;
+
+
         }
         
         this.updateDom(1000);
