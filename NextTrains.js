@@ -237,11 +237,18 @@ Module.register("NextTrains", {
 
         this.trains.forEach(t => {
 
-            // Compress this all into some sort of class
+            // All this is too complicated looking, should compress it into one class for easy use/reuse
 
             let departureDTPlanned = this.createDateTimeFromTime(t.departure_time);
 
-            if(departureDTPlanned <= now || total >= max)
+            //Now that this is occurs before the if statement, introduces major slowdown.
+            //Need to map the stops and use that rather than realTimeMap
+            let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeMap);
+            
+            let departureRealTime = new Date(departureDTPlanned);
+            departureRealTime.setSeconds(departureRealTime.getSeconds() + secondsModifier);
+
+            if(departureRealTime <= now || total >= max)
                 return;
 
             total++;
@@ -251,24 +258,25 @@ Module.register("NextTrains", {
 
 
 
-            let minsUntilTrain = this.getDifferenceInMinutes(departureDTPlanned, new Date());
+            let minsUntilTrain = this.getDifferenceInMinutes(departureRealTime, now);
             
-            let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeMap);
+
             let departureTimeActual = departureDTPlanned;
             departureTimeActual.setSeconds(departureTimeActual.getSeconds() + secondsModifier);
             
             let departureTimeActualLocal = departureTimeActual.toLocaleTimeString();
-            let delayType = this.getDelayType(secondsModifier);
 
             let platform = t["stop_name:1"].split(' ').pop();
             let departureDisplay = "";
 
             if(this.config.debug)
-                departureDisplay =  (minsUntilTrain + parseInt(secondsModifier/60))+"m" + " - " + t.departure_time + " (" + departureTimeActualLocal + ")";
+                departureDisplay =  (minsUntilTrain)+"m" + " - " + t.departure_time + " (" + departureRealTime.toLocaleTimeString() + ")";
+                
             else if(this.config.etd)
-                departureDisplay = departureTimeActualLocal;
+                departureDisplay = departureRealTime.toLocaleTimeString();
+                
             else
-                departureDisplay = (minsUntilTrain + parseInt(secondsModifier/60))+"m";
+                departureDisplay = (minsUntilTrain)+"m";
 
 
             let cancelled = this.isTrainCancelled(t, realTimeMap);
