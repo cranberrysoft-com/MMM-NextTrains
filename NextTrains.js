@@ -215,8 +215,6 @@ Module.register("NextTrains", {
                 // Start date should be used to disambiguate trips that are so late that they collide with a scheduled trip on the next day.
                 // However this rarely happen, but should eventually be built out for accuracy
                 // Ideally the map ID will become startDate + tripID + stopID
-                // Further ID should become hash(startDate + tripID + stopID), to reduce memory usage
-                // Especially import when deploying for PI
 
                 let type = arr[i].tripUpdate.trip.scheduleRelationship;
 
