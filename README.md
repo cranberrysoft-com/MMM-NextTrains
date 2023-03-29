@@ -32,7 +32,6 @@ A MagicMirror module that displays when Sydney trains depart from a selected sta
 	module: 'NextTrains',
 	position: 'bottom_right',
 	config: {
-			updateInterval: "10",
 			station: "Central Station",
 			maxTrains: 10
 		}
