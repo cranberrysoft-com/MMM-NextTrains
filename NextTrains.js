@@ -419,8 +419,6 @@ Module.register("NextTrains", {
         let context = {
             id: this.identifier,
             station: this.config.station,
-            // maxTrains: this.config.maxTrains,
-            // departedAfter: now.toLocaleTimeString()
             departedAfter: "00:00:00"
         };
 

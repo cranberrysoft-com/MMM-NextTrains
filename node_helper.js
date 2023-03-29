@@ -316,7 +316,6 @@ module.exports = NodeHelper.create({
 			if(db == null)
 				reject();
 
-			// context.maxTrains = Math.min(context.maxTrains, this.maxTrains);
 			let sql = `
 				SELECT * 
 				FROM calendar c 
