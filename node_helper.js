@@ -259,28 +259,12 @@ module.exports = NodeHelper.create({
 					this.getRealTimeUpdates().then((buffer) => {
 						this.realTimeData = this.GTFSRealTimeMessage.decode(buffer);
 						this.realTimeLastModified = Number.parseInt(this.realTimeData.header.timestamp);
-						//this.realTimeData = this.processRealTime(this.realTimeData);
 					}).catch((err) => {
 						console.log(err);
 					});
 			});
 		}
 
-	},
-
-	processRealTime(data) {
-		// Stub function that will filter out excessive records from real time data to reduce overhead on the client
-		
-		// for (let i = 0; i < data.entity.length; i++) {
-			
-		// 	let type = data.entity[i].tripUpdate.trip.scheduleRelationship;
-		// 	if(type == 0) // SCHEDULED //0 SCHEDULED, 
-		// 	{
-		// 	}
-		// 	else if(type == 5){}	
-
-		// }
-		// return data;
 	},
 
 	getDay() {
@@ -316,7 +300,6 @@ module.exports = NodeHelper.create({
 			if(db == null)
 				reject();
 
-			context.maxTrains = Math.min(context.maxTrains, this.maxTrains);
 			let sql = `
 				SELECT * 
 				FROM calendar c 
@@ -340,10 +323,9 @@ module.exports = NodeHelper.create({
 								WHERE c.${day} = 1 
 								AND c.start_date <= strftime('%Y%m%d', 'now') 
 								AND strftime('%Y%m%d', 'now') <= c.end_date 
-				ORDER BY t.departure_time 
- 				LIMIT ?`
+				ORDER BY t.departure_time`
 
-				let params = [context.station, context.departedAfter, context.maxTrains];
+				let params = [context.station, context.departedAfter];
 				
 				db.all(sql, params, (err, trains) => {
 				  if (err) {
