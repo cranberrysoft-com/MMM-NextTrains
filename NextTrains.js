@@ -237,14 +237,14 @@ Module.register("NextTrains", {
                             map[newID] = {"trip": i, "stop": j };
                         }
                         else
-                            console.error("Error: multiple IDs found in realtime data");
+                            console.error("Error: multiple IDs found in realtime stop data");
                     }
                 }
         }
         return map;
     },
 
-    generateRealTimeMap(realTimeUpdates) {
+    generateRealTimeTripsMap(realTimeUpdates) {
 
         let map = {};
 
@@ -274,7 +274,7 @@ Module.register("NextTrains", {
 
         let row = null;
         
-        let realTimeMap = this.generateRealTimeMap(realTimeUpdates);
+        let realTimeMap = this.generateRealTimeTripsMap(realTimeUpdates);
         let realTimeStopsMap = this.generateRealTimeStopsMap(realTimeUpdates);
 
         let now = new Date();
