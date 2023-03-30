@@ -20,8 +20,9 @@ A MagicMirror module that displays when Sydney trains depart from a selected sta
   5. ```sudo apt-get install sqlite3```
   6. Create an account on [Transport NSW OpenData](https://opendata.transport.nsw.gov.au/)
   7. Create an application and obtain an API key from [Transport NSW OpenData Applications](https://opendata.transport.nsw.gov.au/applications)
-  8. Replace <YOUR_API_KEY_HERE> in `server.conf` with your api key
-  9. Insert the example configurations into your MagicMirror config file
+  8. Make a copy of the sample server config file ```cp ./server.conf.sample ./server.conf```
+  9. Replace <YOUR_API_KEY_HERE> in `server.conf` with your api key
+  10. Insert the example configurations into your MagicMirror config file
   
 ### Windows
 - No Windows version available yet
