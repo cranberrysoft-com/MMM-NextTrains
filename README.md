@@ -20,13 +20,17 @@ A MagicMirror module that displays when Sydney trains depart from a selected sta
   5. ```sudo apt-get install sqlite3```
   6. Create an account on [Transport NSW OpenData](https://opendata.transport.nsw.gov.au/)
   7. Create an application and obtain an API key from [Transport NSW OpenData Applications](https://opendata.transport.nsw.gov.au/applications)
-  8. Replace <YOUR_API_KEY_HERE> in `server.conf` with your api key
-  9. Insert the module configurations into the MagicMirror config file
+  8. Make a copy of the sample server config file ```cp ./server.conf.sample ./server.conf```
+  9. Replace <YOUR_API_KEY_HERE> in `server.conf` with your api key
+  10. Insert the example configurations into your MagicMirror config file
   
 ### Windows
 - No Windows version available yet
   
- **Example Configuration:**
+  
+ ## Config
+ 
+ ### Example configurations for config.js:
 ```
 {
 	module: 'NextTrains',
@@ -38,7 +42,7 @@ A MagicMirror module that displays when Sydney trains depart from a selected sta
 }
 ```
 
-## Config
+### Config Options
 | **Option** | **Description** |
 | --- | --- |
 | `station` | The name of the Sydney train station to monitor e.g. "Central Station" or "North Sydney Station"|
@@ -46,6 +50,8 @@ A MagicMirror module that displays when Sydney trains depart from a selected sta
 | `realTimeInterval` | How often the widget should refresh it's realtime data (in seconds), default is `10`. |
 | `maxTrains` | The maximum number of trains to display at a time, default is `10` |
 | `delaysFormat` | Either `m`, `s` or `m:s` Determines what format to display delays in, default is `m` |
+| `lateCriticalLimit` | After how many seconds to highlight a delay as critically late (red text), default is `600` |
+| `etd` | Estimated time of departure - show departure time in time format, default is `false` |
 
 ---
 

@@ -86,7 +86,9 @@ module.exports = NodeHelper.create({
 				//Otherwise use the local existing database
 				else 
 					this.openDatabase(this.dbPath);
-			});
+			}).catch((err) => {
+				console.error(err);
+			 });
 		}
 	},
 
@@ -246,7 +248,9 @@ module.exports = NodeHelper.create({
 			this.getStaticGTFSLastModified().then(lastModified => {
 				if(!this.GTFSLastModified || lastModified > this.GTFSLastModified) 
 					this.updateGTFSData();
-			});
+			}).catch((err) => {
+				console.error(err);
+			}) ;
 		}
 	},
 
@@ -257,11 +261,24 @@ module.exports = NodeHelper.create({
 			this.isRealTimeUpdateAvailable().then(updateAvailable => {
 				if(updateAvailable)
 					this.getRealTimeUpdates().then((buffer) => {
-						this.realTimeData = this.GTFSRealTimeMessage.decode(buffer);
-						this.realTimeLastModified = Number.parseInt(this.realTimeData.header.timestamp);
+
+						//Make this prettier
+						try {
+							this.realTimeData = this.GTFSRealTimeMessage.decode(buffer);
+							this.realTimeLastModified = Number.parseInt(this.realTimeData.header.timestamp);
+						 } catch (e) {
+							  if (e instanceof protobuf.util.ProtocolError) {
+									console.error("Protocol buffer protocol error");
+							  } else {
+									console.error("Protocol buffer wire format is invalid");
+							  }
+						 }
+
 					}).catch((err) => {
-						console.log(err);
+						console.error(err);
 					});
+			}).catch((err) => {
+				console.error(err);
 			});
 		}
 
@@ -282,8 +299,8 @@ module.exports = NodeHelper.create({
 		if(notification === "GET_TRAINS") 
 			this.getTrains(payload.context, this.getDay()).then((trains) => {
 				this.sendSocketNotification("STATIC_DATA", {"id": payload.context.id, "trains": trains}  );
-			}).catch(() => {
-				console.log("ERR: failed to query database");
+			}).catch((err) => {
+				console.error(err);
 			});
 		else if(notification === "GET_REALTIME")
 		{
@@ -298,7 +315,7 @@ module.exports = NodeHelper.create({
 		const customPromise = new Promise((resolve, reject) => {
 
 			if(db == null)
-				reject();
+				reject("Error: Database has not loaded");
 
 			let sql = `
 				SELECT * 
@@ -359,8 +376,7 @@ module.exports = NodeHelper.create({
 				}
 				else
 				{
-					console.log("GTFS: Cannot reach Transport API for static GTFS data")
-					reject();
+					reject("GTFS: Cannot reach Transport API for static GTFS data");
 				}
 			});
 			req.end();
@@ -377,11 +393,21 @@ module.exports = NodeHelper.create({
 
 			this.getRealTimeUpdates().then((buffer) => {
 
+				// Make this prettier
+				try {
+					let feedMessage = this.GTFSRealTimeMessage.decode(buffer);
+					let lastModified = Number.parseInt(feedMessage.header.timestamp);
+					resolve( !this.realTimeLastModified || this.realTimeLastModified < lastModified );				
+				 } catch (e) {
+					  if (e instanceof protobuf.util.ProtocolError) {
+							reject("Protocol buffer protocol error");
+							console.error(e);
+					  } else {
+						 	console.error(e);
+						 	reject("Protocol buffer wire format is invalid");
+					  }
+				 }
 
-				let feedMessage = this.GTFSRealTimeMessage.decode(buffer);
-				let lastModified = Number.parseInt(feedMessage.header.timestamp);
-
-				resolve( !this.realTimeLastModified || this.realTimeLastModified < lastModified );				
 			}).catch(  (err) => { 
 				reject(err); 
 			});
