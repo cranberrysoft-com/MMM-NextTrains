@@ -358,8 +358,13 @@ Module.register("NextTrains", {
 
             //https://developers.google.com/transit/gtfs-realtime/reference/#message-stoptimeevent
             //The field time or delay could be used: TODO
+            if ( arr[i].tripUpdate.stopTimeUpdate[j].scheduleRelationship == "SKIPPED")
+                return 0;//Note this relates to an exception circumstance, examine further
+
             if(arr[i].tripUpdate.stopTimeUpdate[j].departure.delay == undefined)
+            {
                 return 0;
+            }
 
             return arr[i].tripUpdate.stopTimeUpdate[j].departure.delay;
         }
