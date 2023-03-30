@@ -257,10 +257,23 @@ module.exports = NodeHelper.create({
 			this.isRealTimeUpdateAvailable().then(updateAvailable => {
 				if(updateAvailable)
 					this.getRealTimeUpdates().then((buffer) => {
-						this.realTimeData = this.GTFSRealTimeMessage.decode(buffer);
-						this.realTimeLastModified = Number.parseInt(this.realTimeData.header.timestamp);
+
+						//Make this prettier
+						try {
+							this.realTimeData = this.GTFSRealTimeMessage.decode(buffer);
+							this.realTimeLastModified = Number.parseInt(this.realTimeData.header.timestamp);
+						 } catch (e) {
+							  if (e instanceof protobuf.util.ProtocolError) {
+									console.error("Protocol buffer protocol error");
+									console.error(e);
+							  } else {
+									console.error("Protocol buffer wire format is invalid");
+								 	console.error(e);
+							  }
+						 }
+
 					}).catch((err) => {
-						console.log(err);
+						console.error(err);
 					});
 			});
 		}
@@ -359,7 +372,7 @@ module.exports = NodeHelper.create({
 				}
 				else
 				{
-					console.log("GTFS: Cannot reach Transport API for static GTFS data")
+					console.error("GTFS: Cannot reach Transport API for static GTFS data")
 					reject();
 				}
 			});
@@ -377,11 +390,21 @@ module.exports = NodeHelper.create({
 
 			this.getRealTimeUpdates().then((buffer) => {
 
+				// Make this prettier
+				try {
+					let feedMessage = this.GTFSRealTimeMessage.decode(buffer);
+					let lastModified = Number.parseInt(feedMessage.header.timestamp);
+					resolve( !this.realTimeLastModified || this.realTimeLastModified < lastModified );				
+				 } catch (e) {
+					  if (e instanceof protobuf.util.ProtocolError) {
+							reject("Protocol buffer protocol error");
+							console.error(e);
+					  } else {
+						 	console.error(e);
+						 	reject("Protocol buffer wire format is invalid");
+					  }
+				 }
 
-				let feedMessage = this.GTFSRealTimeMessage.decode(buffer);
-				let lastModified = Number.parseInt(feedMessage.header.timestamp);
-
-				resolve( !this.realTimeLastModified || this.realTimeLastModified < lastModified );				
 			}).catch(  (err) => { 
 				reject(err); 
 			});
