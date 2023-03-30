@@ -308,12 +308,15 @@ Module.register("NextTrains", {
 
             if(this.config.debug)
                 departureDisplay =  (minsUntilTrain)+"m" + " - " + t.departure_time + " (" + departureRealTime.toLocaleTimeString() + ")";
-                
             else if(this.config.etd)
                 departureDisplay = departureRealTime.toLocaleTimeString();
-                
             else
-                departureDisplay = (minsUntilTrain)+"m";
+            {   
+                if(minsUntilTrain == 0)
+                    departureDisplay = "Now";
+                else
+                    departureDisplay = (minsUntilTrain)+"m";
+            }
 
 
             let cancelled = this.isTrainCancelled(t, realTimeMap, realTimeUpdates);
