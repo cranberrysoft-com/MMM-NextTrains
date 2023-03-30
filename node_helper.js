@@ -282,8 +282,8 @@ module.exports = NodeHelper.create({
 		if(notification === "GET_TRAINS") 
 			this.getTrains(payload.context, this.getDay()).then((trains) => {
 				this.sendSocketNotification("STATIC_DATA", {"id": payload.context.id, "trains": trains}  );
-			}).catch(() => {
-				console.log("ERR: failed to query database");
+			}).catch((err) => {
+				console.error(err);
 			});
 		else if(notification === "GET_REALTIME")
 		{
@@ -298,7 +298,7 @@ module.exports = NodeHelper.create({
 		const customPromise = new Promise((resolve, reject) => {
 
 			if(db == null)
-				reject();
+				reject("Error: Database has not loaded");
 
 			let sql = `
 				SELECT * 
