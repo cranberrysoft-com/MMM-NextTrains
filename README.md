@@ -46,7 +46,12 @@ A MagicMirror module that displays when Sydney trains depart from a selected sta
 | `realTimeInterval` | How often the widget should refresh it's realtime data (in seconds), default is `10`. |
 | `maxTrains` | The maximum number of trains to display at a time, default is `10` |
 | `delaysFormat` | Either `m`, `s` or `m:s` Determines what format to display delays in, default is `m` |
+| `lateCriticalLimit` | After how many seconds to highlight a delay as critically late (red text), default is `600` |
+| `etd` | Estimated time of departure - show departure time in time format, default is `false` |
 
+
+        lateCriticalLimit: 600,
+        etd: false,
 ---
 
 
