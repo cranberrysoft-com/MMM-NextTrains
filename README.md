@@ -21,12 +21,15 @@ A MagicMirror module that displays when Sydney trains depart from a selected sta
   6. Create an account on [Transport NSW OpenData](https://opendata.transport.nsw.gov.au/)
   7. Create an application and obtain an API key from [Transport NSW OpenData Applications](https://opendata.transport.nsw.gov.au/applications)
   8. Replace <YOUR_API_KEY_HERE> in `server.conf` with your api key
-  9. Insert the module configurations into the MagicMirror config file
+  9. Insert the example configurations into your MagicMirror config file
   
 ### Windows
 - No Windows version available yet
   
- **Example Configuration:**
+  
+ ## Config
+ 
+ ### Example configurations for config.js:
 ```
 {
 	module: 'NextTrains',
@@ -38,7 +41,7 @@ A MagicMirror module that displays when Sydney trains depart from a selected sta
 }
 ```
 
-## Config
+### Config Options
 | **Option** | **Description** |
 | --- | --- |
 | `station` | The name of the Sydney train station to monitor e.g. "Central Station" or "North Sydney Station"|
@@ -49,9 +52,6 @@ A MagicMirror module that displays when Sydney trains depart from a selected sta
 | `lateCriticalLimit` | After how many seconds to highlight a delay as critically late (red text), default is `600` |
 | `etd` | Estimated time of departure - show departure time in time format, default is `false` |
 
-
-        lateCriticalLimit: 600,
-        etd: false,
 ---
 
 
