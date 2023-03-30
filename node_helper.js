@@ -86,7 +86,9 @@ module.exports = NodeHelper.create({
 				//Otherwise use the local existing database
 				else 
 					this.openDatabase(this.dbPath);
-			});
+			}).catch((err) => {
+				console.error(err);
+			 });
 		}
 	},
 
@@ -246,7 +248,9 @@ module.exports = NodeHelper.create({
 			this.getStaticGTFSLastModified().then(lastModified => {
 				if(!this.GTFSLastModified || lastModified > this.GTFSLastModified) 
 					this.updateGTFSData();
-			});
+			}).catch((err) => {
+				console.error(err);
+			}) ;
 		}
 	},
 
@@ -374,8 +378,7 @@ module.exports = NodeHelper.create({
 				}
 				else
 				{
-					console.error("GTFS: Cannot reach Transport API for static GTFS data")
-					reject();
+					reject("GTFS: Cannot reach Transport API for static GTFS data");
 				}
 			});
 			req.end();
