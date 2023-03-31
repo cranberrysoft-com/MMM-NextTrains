@@ -30,7 +30,7 @@ Module.register("NextTrains", {
     },
 
     start() {
-
+        
         // this.config.updateInterval = this.config.updateInterval * 1000
         
         let staticInterval = this.config.staticInterval * 1000;
@@ -260,6 +260,40 @@ Module.register("NextTrains", {
         return map;
     },
 
+
+    getTrainsToDisplay(now, realTimeUpdates, realTimeStopsMap, realTimeMap) {
+
+        let displayTrains = [];
+        
+        let total = 0;
+        let max = this.config.maxTrains;
+
+        this.trains.forEach(t => {
+
+            let departurePlanned = this.createDateTimeFromTime(t.departure_time);
+            let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeStopsMap, realTimeUpdates);
+            let departureRealTime = new Date(departurePlanned);
+            departureRealTime.setSeconds(departureRealTime.getSeconds() + secondsModifier);
+
+            if(departureRealTime <= now || total >= max)
+                return;
+
+
+            displayTrains.push({    "departureRealTime":departureRealTime,
+                                    "departurePlanned": departurePlanned, 
+                                    "secondsModifier": secondsModifier,
+                                    "platform": t["stop_name:1"].split(' ').pop(),
+                                    "cancelled": this.isTrainCancelled(t, realTimeMap, realTimeUpdates),
+                                    "trip_headsign": t.trip_headsign
+                                    
+            });
+
+            total++;
+        });
+        
+        return displayTrains;
+    },
+
     getDom() {
 
         if(this.trains.length == 0)
@@ -279,37 +313,24 @@ Module.register("NextTrains", {
 
         let now = new Date();
 
-        let total = 0;
-        let max = this.config.maxTrains;
+        let displayTrains = this.getTrainsToDisplay(now, realTimeUpdates, realTimeStopsMap, realTimeMap);
+        
+        displayTrains.sort((a, b) => {
+            return a.departureRealTime > b.departureRealTime ? 1 : -1;
+        });
 
-        this.trains.forEach(t => {
+
+        displayTrains.forEach(t => {
 
             // All this is too complicated looking, should compress it into one class for easy use/reuse
 
-            let departureDTPlanned = this.createDateTimeFromTime(t.departure_time);
-            let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeStopsMap, realTimeUpdates);
-            
-            let departureRealTime = new Date(departureDTPlanned);
-            departureRealTime.setSeconds(departureRealTime.getSeconds() + secondsModifier);
-
-            if(departureRealTime <= now || total >= max)
-                return;
-
-            total++;
-
-            let minsUntilTrain = this.getDifferenceInMinutes(departureRealTime, now);
-            
-
-            let departureTimeActual = departureDTPlanned;
-            departureTimeActual.setSeconds(departureTimeActual.getSeconds() + secondsModifier);
-
-            let platform = t["stop_name:1"].split(' ').pop();
+            let minsUntilTrain = this.getDifferenceInMinutes(t.departureRealTime, now);
             let departureDisplay = "";
 
             if(this.config.debug)
-                departureDisplay =  (minsUntilTrain)+"m" + " - " + t.departure_time + " (" + departureRealTime.toLocaleTimeString() + ")";
+                departureDisplay =  (minsUntilTrain)+"m" + " - " + t.departurePlanned.toLocaleTimeString() + " (" + t.departureRealTime.toLocaleTimeString() + ")";
             else if(this.config.etd)
-                departureDisplay = departureRealTime.toLocaleTimeString();
+                departureDisplay = t.departureRealTime.toLocaleTimeString();
             else
             {   
                 if(minsUntilTrain == 0)
@@ -319,8 +340,7 @@ Module.register("NextTrains", {
             }
 
 
-            let cancelled = this.isTrainCancelled(t, realTimeMap, realTimeUpdates);
-            row = this.createTrainRow( platform, t.trip_headsign, departureDisplay, secondsModifier, cancelled);
+            row = this.createTrainRow( t.platform, t.trip_headsign, departureDisplay, t.secondsModifier, t.cancelled);
 
             wrapper.appendChild(row)
         });
