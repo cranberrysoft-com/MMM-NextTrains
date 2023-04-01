@@ -294,7 +294,28 @@ Module.register("NextTrains", {
         return displayTrains;
     },
 
+    getDepartureDisplay(t, minsUntilTrain)
+    {
+        let departureDisplay = "";
+
+        if(this.config.debug)
+            departureDisplay =  (minsUntilTrain)+"m" + " - " + t.departurePlanned.toLocaleTimeString() + " (" + t.departureRealTime.toLocaleTimeString() + ")";
+        else if(this.config.etd)
+            departureDisplay = t.departureRealTime.toLocaleTimeString();
+        else
+        {   
+            if(minsUntilTrain == 0)
+                departureDisplay = "Now";
+            else
+                departureDisplay = (minsUntilTrain)+"m";
+        }
+
+        return departureDisplay;
+    },
+
     getDom() {
+
+        // This class needs to be reduced
 
         if(this.trains.length == 0)
             return this.initialMessage();
@@ -322,23 +343,8 @@ Module.register("NextTrains", {
 
         displayTrains.forEach(t => {
 
-            // All this is too complicated looking, should compress it into one class for easy use/reuse
-
             let minsUntilTrain = this.getDifferenceInMinutes(t.departureRealTime, now);
-            let departureDisplay = "";
-
-            if(this.config.debug)
-                departureDisplay =  (minsUntilTrain)+"m" + " - " + t.departurePlanned.toLocaleTimeString() + " (" + t.departureRealTime.toLocaleTimeString() + ")";
-            else if(this.config.etd)
-                departureDisplay = t.departureRealTime.toLocaleTimeString();
-            else
-            {   
-                if(minsUntilTrain == 0)
-                    departureDisplay = "Now";
-                else
-                    departureDisplay = (minsUntilTrain)+"m";
-            }
-
+            let departureDisplay = this.getDepartureDisplay(t, minsUntilTrain);
 
             row = this.createTrainRow( t.platform, t.trip_headsign, departureDisplay, t.secondsModifier, t.cancelled);
 
