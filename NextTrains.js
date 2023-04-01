@@ -255,7 +255,7 @@ Module.register("NextTrains", {
             if(map[dupeID] == undefined)
                 map[arr[i].tripUpdate.trip.tripId] = i;
             else
-                console.error("Error: multiple IDs found in realtime data");
+                console.error("Error: multiple IDs found in realtime trip data");
         }
         return map;
     },
