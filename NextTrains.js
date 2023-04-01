@@ -16,8 +16,6 @@ Module.register("NextTrains", {
     realTimeInitialised: false,
     // Default module config.
     defaults: {
-        // updateInterval : 10, //Seconds before changeing
-
         staticInterval: 1800, //30 minutes
         realTimeInterval: 60,
 
@@ -30,8 +28,6 @@ Module.register("NextTrains", {
     },
 
     start() {
-        
-        // this.config.updateInterval = this.config.updateInterval * 1000
         
         let staticInterval = this.config.staticInterval * 1000;
         let realTimeInterval = this.config.realTimeInterval * 1000;
