@@ -266,6 +266,9 @@ Module.register("NextTrains", {
 
         this.trains.forEach(t => {
 
+            if(this.isTrainSkipped(t, realTimeStopsMap, realTimeUpdates))
+                return;
+
             let departurePlanned = this.createDateTimeFromTime(t.departure_time);
             let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeStopsMap, realTimeUpdates);
             let departureRealTime = new Date(departurePlanned);
@@ -307,6 +310,25 @@ Module.register("NextTrains", {
         }
 
         return departureDisplay;
+    },
+
+    isTrainSkipped(train, stopIDMap, realTimeUpdates) {
+
+        let match = stopIDMap[train.trip_id + "." + train.stop_id];
+
+        // IF real time updates have not been obtained OR
+        // IF the train does not have a corrosponding record in the real time updates
+        if (!realTimeUpdates || match == undefined) 
+            return 0;
+
+        let i = match.trip;
+        let j = match.stop;
+        let arr = realTimeUpdates.entity;
+
+        if ( arr[i].tripUpdate.stopTimeUpdate[j].scheduleRelationship == "SKIPPED")
+            return true;
+
+        return false;
     },
 
     getDom() {
@@ -377,11 +399,6 @@ Module.register("NextTrains", {
             let i = match.trip;
             let j = match.stop;
             let arr = realTimeUpdates.entity;
-
-            //https://developers.google.com/transit/gtfs-realtime/reference/#message-stoptimeevent
-            //The field time or delay could be used: TODO
-            if ( arr[i].tripUpdate.stopTimeUpdate[j].scheduleRelationship == "SKIPPED")
-                return 0;//Note this relates to an exception circumstance, examine further
 
             if(arr[i].tripUpdate.stopTimeUpdate[j].departure.delay == undefined)
             {
