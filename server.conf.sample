@@ -11,7 +11,7 @@
    {
       "hostname": "api.transport.nsw.gov.au",
       "path": "/v2/gtfs/realtime/sydneytrains",
-      "interval": 10
+      "interval": 60
    },
    "apikey": "<YOUR_API_KEY_HERE>"
 }

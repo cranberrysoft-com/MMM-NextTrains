@@ -401,9 +401,7 @@ module.exports = NodeHelper.create({
 				 } catch (e) {
 					  if (e instanceof protobuf.util.ProtocolError) {
 							reject("Protocol buffer protocol error");
-							console.error(e);
 					  } else {
-						 	console.error(e);
 						 	reject("Protocol buffer wire format is invalid");
 					  }
 				 }

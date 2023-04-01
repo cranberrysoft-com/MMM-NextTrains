@@ -16,8 +16,6 @@ Module.register("NextTrains", {
     realTimeInitialised: false,
     // Default module config.
     defaults: {
-        // updateInterval : 10, //Seconds before changeing
-
         staticInterval: 1800, //30 minutes
         realTimeInterval: 60,
 
@@ -30,8 +28,6 @@ Module.register("NextTrains", {
     },
 
     start() {
-
-        // this.config.updateInterval = this.config.updateInterval * 1000
         
         let staticInterval = this.config.staticInterval * 1000;
         let realTimeInterval = this.config.realTimeInterval * 1000;
@@ -233,9 +229,7 @@ Module.register("NextTrains", {
                         let newID = tripID + "." + stopID;
 
                         if(map[newID] == undefined)
-                        {
                             map[newID] = {"trip": i, "stop": j };
-                        }
                         else
                             console.error("Error: multiple IDs found in realtime stop data");
                     }
@@ -255,12 +249,88 @@ Module.register("NextTrains", {
             if(map[dupeID] == undefined)
                 map[arr[i].tripUpdate.trip.tripId] = i;
             else
-                console.error("Error: multiple IDs found in realtime data");
+                console.error("Error: multiple IDs found in realtime trip data");
         }
         return map;
     },
 
+
+    getTrainsToDisplay(now, realTimeUpdates, realTimeStopsMap, realTimeMap) {
+
+        let displayTrains = [];
+        
+        let total = 0;
+        let max = this.config.maxTrains;
+
+        this.trains.forEach(t => {
+
+            if(this.isTrainSkipped(t, realTimeStopsMap, realTimeUpdates))
+                return;
+
+            let departurePlanned = this.createDateTimeFromTime(t.departure_time);
+            let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeStopsMap, realTimeUpdates);
+            let departureRealTime = new Date(departurePlanned);
+            departureRealTime.setSeconds(departureRealTime.getSeconds() + secondsModifier);
+
+            if(departureRealTime <= now || total >= max)
+                return;
+
+
+            displayTrains.push({    "departureRealTime":departureRealTime,
+                                    "departurePlanned": departurePlanned, 
+                                    "secondsModifier": secondsModifier,
+                                    "platform": t["stop_name:1"].split(' ').pop(),
+                                    "cancelled": this.isTrainCancelled(t, realTimeMap, realTimeUpdates),
+                                    "trip_headsign": t.trip_headsign
+            });
+
+            total++;
+        });
+        
+        return displayTrains;
+    },
+
+    getDepartureDisplay(t, minsUntilTrain)
+    {
+        let departureDisplay = "";
+
+        if(this.config.debug)
+            departureDisplay =  (minsUntilTrain)+"m" + " - " + t.departurePlanned.toLocaleTimeString() + " (" + t.departureRealTime.toLocaleTimeString() + ")";
+        else if(this.config.etd)
+            departureDisplay = t.departureRealTime.toLocaleTimeString();
+        else
+        {   
+            if(minsUntilTrain == 0)
+                departureDisplay = "Now";
+            else
+                departureDisplay = (minsUntilTrain)+"m";
+        }
+
+        return departureDisplay;
+    },
+
+    isTrainSkipped(train, stopIDMap, realTimeUpdates) {
+
+        let match = stopIDMap[train.trip_id + "." + train.stop_id];
+
+        // IF real time updates have not been obtained OR
+        // IF the train does not have a corrosponding record in the real time updates
+        if (!realTimeUpdates || match == undefined) 
+            return 0;
+
+        let i = match.trip;
+        let j = match.stop;
+        let arr = realTimeUpdates.entity;
+
+        if ( arr[i].tripUpdate.stopTimeUpdate[j].scheduleRelationship == "SKIPPED")
+            return true;
+
+        return false;
+    },
+
     getDom() {
+
+        // This class needs to be reduced
 
         if(this.trains.length == 0)
             return this.initialMessage();
@@ -279,48 +349,19 @@ Module.register("NextTrains", {
 
         let now = new Date();
 
-        let total = 0;
-        let max = this.config.maxTrains;
-
-        this.trains.forEach(t => {
-
-            // All this is too complicated looking, should compress it into one class for easy use/reuse
-
-            let departureDTPlanned = this.createDateTimeFromTime(t.departure_time);
-            let secondsModifier = this.findRealTimeChangesInSeconds(t, realTimeStopsMap, realTimeUpdates);
-            
-            let departureRealTime = new Date(departureDTPlanned);
-            departureRealTime.setSeconds(departureRealTime.getSeconds() + secondsModifier);
-
-            if(departureRealTime <= now || total >= max)
-                return;
-
-            total++;
-
-            let minsUntilTrain = this.getDifferenceInMinutes(departureRealTime, now);
-            
-
-            let departureTimeActual = departureDTPlanned;
-            departureTimeActual.setSeconds(departureTimeActual.getSeconds() + secondsModifier);
-
-            let platform = t["stop_name:1"].split(' ').pop();
-            let departureDisplay = "";
-
-            if(this.config.debug)
-                departureDisplay =  (minsUntilTrain)+"m" + " - " + t.departure_time + " (" + departureRealTime.toLocaleTimeString() + ")";
-            else if(this.config.etd)
-                departureDisplay = departureRealTime.toLocaleTimeString();
-            else
-            {   
-                if(minsUntilTrain == 0)
-                    departureDisplay = "Now";
-                else
-                    departureDisplay = (minsUntilTrain)+"m";
-            }
+        let displayTrains = this.getTrainsToDisplay(now, realTimeUpdates, realTimeStopsMap, realTimeMap);
+        
+        displayTrains.sort((a, b) => {
+            return a.departureRealTime > b.departureRealTime ? 1 : -1;
+        });
 
 
-            let cancelled = this.isTrainCancelled(t, realTimeMap, realTimeUpdates);
-            row = this.createTrainRow( platform, t.trip_headsign, departureDisplay, secondsModifier, cancelled);
+        displayTrains.forEach(t => {
+
+            let minsUntilTrain = this.getDifferenceInMinutes(t.departureRealTime, now);
+            let departureDisplay = this.getDepartureDisplay(t, minsUntilTrain);
+
+            row = this.createTrainRow( t.platform, t.trip_headsign, departureDisplay, t.secondsModifier, t.cancelled);
 
             wrapper.appendChild(row)
         });
@@ -350,21 +391,14 @@ Module.register("NextTrains", {
         if (!realTimeUpdates || match == undefined) 
             return 0;
 
-        if(match != undefined)
-        {
-            let i = match.trip;
-            let j = match.stop;
-            let arr = realTimeUpdates.entity;
+        let i = match.trip;
+        let j = match.stop;
+        let arr = realTimeUpdates.entity;
 
-            //https://developers.google.com/transit/gtfs-realtime/reference/#message-stoptimeevent
-            //The field time or delay could be used: TODO
-            if(arr[i].tripUpdate.stopTimeUpdate[j].departure.delay == undefined)
-                return 0;
+        if(arr[i].tripUpdate.stopTimeUpdate[j].departure.delay == undefined)
+            return 0;
 
-            return arr[i].tripUpdate.stopTimeUpdate[j].departure.delay;
-        }
-        
-        return 0;
+        return arr[i].tripUpdate.stopTimeUpdate[j].departure.delay;
     },
 
 
@@ -382,18 +416,14 @@ Module.register("NextTrains", {
         // IF real time updates have not been obtained OR
         // IF the train does not have a corrosponding record in the real time updates
         if (!realTimeUpdates || i == undefined) 
-            return 0;
+            return false;
 
         let arr = realTimeUpdates.entity;
 
         let type = arr[i].tripUpdate.trip.scheduleRelationship;
 
-
         if(type == "CANCELED")
-        {
             return true;
-        }
-
 
         return false;
     },
