@@ -413,18 +413,14 @@ Module.register("NextTrains", {
         // IF real time updates have not been obtained OR
         // IF the train does not have a corrosponding record in the real time updates
         if (!realTimeUpdates || i == undefined) 
-            return 0;
+            return false;
 
         let arr = realTimeUpdates.entity;
 
         let type = arr[i].tripUpdate.trip.scheduleRelationship;
 
-
         if(type == "CANCELED")
-        {
             return true;
-        }
-
 
         return false;
     },
