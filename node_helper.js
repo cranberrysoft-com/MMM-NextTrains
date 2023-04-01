@@ -321,11 +321,17 @@ module.exports = NodeHelper.create({
 				SELECT * 
 				FROM calendar c 
 				JOIN (
-					SELECT * 
+					SELECT t.route_id, t.service_id, t.trip_id, t.trip_headsign, st.*
 					FROM trips t 
 					JOIN (
 						SELECT 
-							st.*,
+							st.trip_id,
+							st.arrival_time,
+							st.departure_time,
+							st.stop_id,
+							st.stop_headsign,
+							st.pickup_type,
+							st.drop_off_type,
 							p.stop_name, 
 							c.stop_name, 
 							c.stop_id 
@@ -336,11 +342,11 @@ module.exports = NodeHelper.create({
 						AND st.departure_time >= ?
 						AND st.pickup_type = 0
 					) st ON t.trip_id = st.trip_id
-				) t ON c.service_id = t.service_id 
+				) x ON c.service_id = x.service_id 
 								WHERE c.${day} = 1 
-								AND c.start_date <= strftime('%Y%m%d', 'now') 
+								AND c.start_date <= strftime('%Y%m%d', 'now')
 								AND strftime('%Y%m%d', 'now') <= c.end_date 
-				ORDER BY t.departure_time`
+				ORDER BY x.departure_time;`
 
 				let params = [context.station, context.departedAfter];
 				
