@@ -394,21 +394,14 @@ Module.register("NextTrains", {
         if (!realTimeUpdates || match == undefined) 
             return 0;
 
-        if(match != undefined)
-        {
-            let i = match.trip;
-            let j = match.stop;
-            let arr = realTimeUpdates.entity;
+        let i = match.trip;
+        let j = match.stop;
+        let arr = realTimeUpdates.entity;
 
-            if(arr[i].tripUpdate.stopTimeUpdate[j].departure.delay == undefined)
-            {
-                return 0;
-            }
+        if(arr[i].tripUpdate.stopTimeUpdate[j].departure.delay == undefined)
+            return 0;
 
-            return arr[i].tripUpdate.stopTimeUpdate[j].departure.delay;
-        }
-        
-        return 0;
+        return arr[i].tripUpdate.stopTimeUpdate[j].departure.delay;
     },
 
 
