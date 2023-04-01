@@ -229,9 +229,7 @@ Module.register("NextTrains", {
                         let newID = tripID + "." + stopID;
 
                         if(map[newID] == undefined)
-                        {
                             map[newID] = {"trip": i, "stop": j };
-                        }
                         else
                             console.error("Error: multiple IDs found in realtime stop data");
                     }
@@ -284,7 +282,6 @@ Module.register("NextTrains", {
                                     "platform": t["stop_name:1"].split(' ').pop(),
                                     "cancelled": this.isTrainCancelled(t, realTimeMap, realTimeUpdates),
                                     "trip_headsign": t.trip_headsign
-                                    
             });
 
             total++;
