@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/sh
 
 tbl_agency='CREATE TABLE agency (
 	agency_id TEXT UNIQUE
