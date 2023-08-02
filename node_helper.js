@@ -338,7 +338,7 @@ module.exports = NodeHelper.create({
 						FROM stop_times st 
 						JOIN stops p ON st.stop_id = c.stop_id
 						JOIN stops c ON p.stop_id = c.parent_station 
-						WHERE p.stop_name = ?
+						WHERE c.stop_name = ?
 						AND st.departure_time >= ?
 						AND st.pickup_type = 0
 					) st ON t.trip_id = st.trip_id
