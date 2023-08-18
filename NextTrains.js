@@ -455,7 +455,7 @@ Module.register("NextTrains", {
     },
 
     getTrains() {
-        Log.info(this.name + ": Getting trains");
+        console.log(this.name + ": Getting trains");
 
         let now = new Date();
         console.log(now.toLocaleTimeString());
@@ -471,7 +471,7 @@ Module.register("NextTrains", {
     },
 
     getRealTimeUpdates() {
-        Log.info(this.name + ": Getting real time updates");
+        console.log(this.name + ": Getting real time updates");
 
         let context = {
             id: this.identifier,
