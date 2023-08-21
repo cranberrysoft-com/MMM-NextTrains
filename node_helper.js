@@ -298,6 +298,9 @@ module.exports = NodeHelper.create({
 		
 		if(notification === "GET_TRAINS") 
 			this.getTrains(payload.context, this.getDay()).then((trains) => {
+				if ( trains.length == 0 ) {
+					console.log(`No train data for ${payload.context} and day ${this.getDay()}`);
+				}
 				this.sendSocketNotification("STATIC_DATA", {"id": payload.context.id, "trains": trains}  );
 			}).catch((err) => {
 				console.error(err);
