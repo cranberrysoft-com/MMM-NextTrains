@@ -346,8 +346,8 @@ module.exports = NodeHelper.create({
 					) st ON t.trip_id = st.trip_id
 				) x ON c.service_id = x.service_id 
 								WHERE c.${day} = 1 
-								AND c.start_date <= strftime('%Y%m%d', 'now')
-								AND strftime('%Y%m%d', 'now') <= c.end_date 
+								AND c.start_date <= strftime('%Y%m%d', 'now', 'localtime')
+								AND strftime('%Y%m%d', 'now', 'localtime') <= c.end_date 
 				ORDER BY x.departure_time;`
 
 				let params = [context.station, context.departedAfter];
