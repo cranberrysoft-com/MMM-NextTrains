@@ -299,7 +299,7 @@ module.exports = NodeHelper.create({
 		if(notification === "GET_TRAINS") 
 			this.getTrains(payload.context, this.getDay()).then((trains) => {
 				if ( trains.length == 0 ) {
-					console.log(`No train data for ${payload.context} and day ${this.getDay()}`);
+					console.log(`No train data for ${JSON.stringify(payload.context)} and day ${this.getDay()}`);
 				}
 				this.sendSocketNotification("STATIC_DATA", {"id": payload.context.id, "trains": trains}  );
 			}).catch((err) => {
@@ -351,6 +351,8 @@ module.exports = NodeHelper.create({
 				ORDER BY x.departure_time;`
 
 				let params = [context.station, context.departedAfter];
+				console.log(`Now date ${strftime('%Y%m%d', 'now')}`)
+				console.log(`Now day ${day}`)
 				console.info(params)
 				console.info(sql)
 				db.all(sql, params, (err, trains) => {
