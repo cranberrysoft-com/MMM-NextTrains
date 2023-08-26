@@ -351,7 +351,6 @@ module.exports = NodeHelper.create({
 				ORDER BY x.departure_time;`
 
 				let params = [context.station, context.departedAfter];
-				console.log(`Now date ${strftime('%Y%m%d', 'now')}`)
 				console.log(`Now day ${day}`)
 				console.info(params)
 				console.info(sql)
